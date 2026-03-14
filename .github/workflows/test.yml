@@ -1,0 +1,54 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verilator-and-cocotb:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf \
+            bison \
+            build-essential \
+            flex \
+            git \
+            iverilog \
+            libfl-dev \
+            make \
+            perl \
+            python3 \
+            python3-pip \
+            zlib1g-dev
+
+      - name: Build and install Verilator 5.x
+        env:
+          VERILATOR_VERSION: v5.034
+        run: |
+          mkdir -p /tmp/verilator-src /opt/verilator
+          wget -qO- "https://github.com/verilator/verilator/archive/refs/tags/${VERILATOR_VERSION}.tar.gz" | tar -xz --strip-components=1 -C /tmp/verilator-src
+          cd /tmp/verilator-src
+          autoconf
+          ./configure --prefix=/opt/verilator
+          make -j"$(nproc)"
+          sudo make install
+          echo "/opt/verilator/bin" >> "$GITHUB_PATH"
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install cocotb pyuvm numpy torch onnx matplotlib pytest
+
+      - name: Run Verilator lint
+        run: make lint
+
+      - name: Run cocotb pytest suite
+        run: make test

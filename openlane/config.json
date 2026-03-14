@@ -1,0 +1,10 @@
+{
+  "DESIGN_NAME": "attention_stub",
+  "VERILOG_FILES": [
+    "dir::rtl/attention_stub.sv"
+  ],
+  "CLOCK_PORT": "clk",
+  "CLOCK_PERIOD": 20,
+  "FP_PDN_CORE_RING": false,
+  "PL_TARGET_DENSITY_PCT": 45
+}

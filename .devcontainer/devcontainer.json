@@ -1,0 +1,25 @@
+{
+  "name": "open-transformer-130",
+  "build": {
+    "dockerfile": "../docker/Dockerfile",
+    "context": ".."
+  },
+  "workspaceFolder": "/workspace",
+  "remoteUser": "dev",
+  "mounts": [
+    "source=${localEnv:PDK_ROOT},target=/pdk,type=bind,consistency=cached"
+  ],
+  "containerEnv": {
+    "PDK_ROOT": "/pdk"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "eirikpre.systemverilog"
+      ]
+    }
+  },
+  "postCreateCommand": "python3 -m pip install --upgrade pip && python3 -m pip install openlane cocotb pyuvm numpy torch onnx matplotlib"
+}
