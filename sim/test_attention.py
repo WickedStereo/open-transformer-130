@@ -4,15 +4,20 @@ from pathlib import Path
 import cocotb
 import numpy as np
 from cocotb.clock import Clock
-from cocotb.runner import get_runner
 from cocotb.triggers import RisingEdge
 
 from sim.reference_attention import attention
 
+try:
+    from cocotb.runner import get_runner
+except ModuleNotFoundError:
+    # cocotb 2.x exposes the shared runner API through cocotb_tools.
+    from cocotb_tools.runner import get_runner
+
 
 @cocotb.test()
 async def attention_stub_smoke_test(dut):
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
 
     dut.reset.value = 1
     dut.valid_in.value = 0
@@ -36,11 +41,12 @@ async def attention_stub_smoke_test(dut):
     dut.value_in.value = int(value[0, 0])
 
     await RisingEdge(dut.clk)
+
+    assert int(dut.valid_out.value) == 1
+    assert int(dut.value_out.value) == int(value[0, 0])
+
     dut.valid_in.value = 0
     await RisingEdge(dut.clk)
-
-    assert dut.valid_out.value.integer == 1
-    assert dut.value_out.value.integer == int(value[0, 0])
 
     cocotb.log.info("Reference attention output: %s", expected.tolist())
     cocotb.log.info(
@@ -59,6 +65,7 @@ def test_attention_runner():
         build_dir=str(repo_root / "build" / "cocotb"),
         always=True,
         build_args=["--sv"],
+        waves=True,
     )
 
     runner.test(

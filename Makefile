@@ -2,6 +2,7 @@ TOP ?= attention_stub
 PYTHON ?= python3
 VERILATOR ?= verilator
 OPENLANE ?= $(PYTHON) -m openlane
+DOCTOR ?= $(PYTHON) scripts/bootstrap_doctor.py
 OPENLANE_RUN_DIR ?= $(CURDIR)
 ifdef HOST_WORKSPACE
 OPENLANE_RUN_DIR := $(HOST_WORKSPACE)
@@ -14,7 +15,10 @@ FPGA_SRC ?= rtl/attention_stub.sv
 ICE40_ARCH ?=
 ICE40_PACKAGE ?=
 
-.PHONY: sim lint test fpga gds clean
+.PHONY: doctor sim lint test fpga gds clean
+
+doctor:
+	$(DOCTOR)
 
 sim: $(BUILD_DIR)/sim/V$(TOP)
 	./$(BUILD_DIR)/sim/V$(TOP)

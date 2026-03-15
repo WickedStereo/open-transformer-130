@@ -54,6 +54,7 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip \
     cocotb \
     pyuvm \
     numpy \
+    pytest \
     torch \
     onnx \
     matplotlib

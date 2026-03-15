@@ -1,0 +1,40 @@
+name: Architecture Study
+description: Capture an architecture exploration, trade study, or design decision candidate.
+title: "[arch] "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question or design problem
+      description: What needs to be evaluated or decided?
+      placeholder: Define the workload, bottleneck, or design choice that needs study.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Current context
+      description: Reference the current docs, RTL, or reports that shape this question.
+      placeholder: Link relevant files under docs/progress/, sim/, rtl/, or openlane/.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Candidate options
+      description: List the main alternatives that should be compared.
+      placeholder: Option A, Option B, Option C.
+  - type: textarea
+    id: success
+    attributes:
+      label: Success criteria
+      description: What evidence is required to close this study?
+      placeholder: Expected report, model outputs, benchmarks, or ADR.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and blockers
+      description: Note any prerequisites, owner handoffs, or external assumptions.
+      placeholder: Sprint dependency, tooling dependency, or missing data source.

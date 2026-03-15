@@ -1,0 +1,42 @@
+name: Implementation Task
+description: Track a concrete RTL, tooling, software, or integration work item.
+title: "[impl] "
+body:
+  - type: input
+    id: sprint
+    attributes:
+      label: Sprint
+      description: Which sprint doc owns this work?
+      placeholder: Sprint 00, Sprint 03, Sprint 10
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: Describe the implementation outcome in one short paragraph.
+      placeholder: Implement a Makefile doctor target for bootstrap validation.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and files
+      description: List expected files, directories, or interfaces touched by this task.
+      placeholder: Makefile, scripts/bootstrap_doctor.py, README.md
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: State the checks or artifacts required before closing.
+      placeholder: Lint/test passes, report added, docs updated, or CI step green.
+    validations:
+      required: true
+  - type: textarea
+    id: parallelization
+    attributes:
+      label: Parallelization notes
+      description: Call out what can happen in parallel and what this task blocks.
+      placeholder: Can proceed alongside verification work; blocks top-level integration.

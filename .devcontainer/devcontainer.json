@@ -26,5 +26,5 @@
       ]
     }
   },
-  "postCreateCommand": "python3 -m pip install --user --upgrade pip && python3 -m pip install --user openlane cocotb pyuvm numpy torch onnx matplotlib"
+  "postCreateCommand": "python3 -m pip install --user --upgrade pip && python3 -m pip install --user openlane cocotb pyuvm numpy torch onnx matplotlib pytest"
 }

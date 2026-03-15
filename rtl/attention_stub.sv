@@ -12,8 +12,8 @@ module attention_stub #(
     output logic [WIDTH-1:0] value_out
 );
 
-    logic unused_clk;
-    assign unused_clk = clk;
+    logic unused_inputs;
+    assign unused_inputs = clk ^ ^key_in;
 
     // Keep the scaffold physically simple so the OpenLane smoke path stays fast.
     always_comb begin

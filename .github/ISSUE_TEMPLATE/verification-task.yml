@@ -1,0 +1,46 @@
+name: Verification Task
+description: Track a simulation, formal, FPGA-validation, or debug activity.
+title: "[verif] "
+body:
+  - type: input
+    id: target
+    attributes:
+      label: Verification target
+      description: Which block, flow, or workload is being verified?
+      placeholder: dma_engine, isa_decoder, system integration, FPGA bring-up
+    validations:
+      required: true
+  - type: dropdown
+    id: method
+    attributes:
+      label: Verification method
+      options:
+        - Simulation
+        - Formal
+        - FPGA
+        - Physical design check
+        - Post-silicon
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks or properties
+      description: What behaviors, invariants, or workloads must pass?
+      placeholder: No invalid DMA access, no deadlock, bounded softmax error, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Expected evidence
+      description: What report, waveform, trace, or metric is expected?
+      placeholder: SymbiYosys log, cocotb regression result, FPGA trace, or timing report.
+    validations:
+      required: true
+  - type: textarea
+    id: gaps
+    attributes:
+      label: Known gaps or assumptions
+      description: Document any assumptions, constraints, or missing infrastructure.
+      placeholder: Assumes bounded queue depth or lacks board-level memory model.

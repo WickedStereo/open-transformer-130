@@ -17,6 +17,12 @@ The devcontainer is currently optimized for simulation, cocotb, software tooling
 - `scripts/` helper automation
 - `docs/` design notes and project documentation
 
+## Project tracking
+
+- `docs/progress/README.md` is the documentation hub for roadmap, decisions, reports, and sprint plans.
+- `docs/progress/master-plan.md` captures the end-to-end accelerator program from scaffold to post-silicon validation.
+- `docs/progress/current-state.md` records the current implemented baseline so future progress can be measured against it.
+
 ## Host PDK setup
 
 On the Ubuntu host, install Volare and enable Sky130:
@@ -41,12 +47,15 @@ The devcontainer bind-mounts `$HOME/pdk` from the host into `/pdk`, so using `ex
 ## Main commands
 
 ```bash
+make doctor
 make lint
 make sim
 make test
 make fpga ICE40_ARCH=up5k ICE40_PACKAGE=sg48
 make gds PDK_ROOT=$PDK_ROOT
 ```
+
+`make doctor` is the Sprint 00 bootstrap check. It verifies the required lint/test toolchain, confirms the core Python packages are importable, and reports non-blocking gaps for optional later-sprint tooling such as OpenRAM, SymbiYosys, and Caravel-related infrastructure.
 
 `make fpga` is intentionally parameterized because the scaffold does not lock the project to a specific iCE40 part or package yet. The current container keeps only the lighter iCE40 FPGA tooling path enabled.
 

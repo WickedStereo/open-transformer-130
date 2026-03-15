@@ -19,14 +19,20 @@ jobs:
             autoconf \
             bison \
             build-essential \
+            ca-certificates \
             flex \
+            fpga-icestorm \
+            fpga-icestorm-chipdb \
             git \
             iverilog \
             libfl-dev \
             make \
+            nextpnr-ice40 \
             perl \
             python3 \
             python3-pip \
+            wget \
+            yosys \
             zlib1g-dev
 
       - name: Build and install Verilator 5.x
@@ -45,7 +51,10 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install cocotb pyuvm numpy torch onnx matplotlib pytest
+          python3 -m pip install openlane cocotb pyuvm numpy torch onnx matplotlib pytest
+
+      - name: Run bootstrap doctor
+        run: make doctor
 
       - name: Run Verilator lint
         run: make lint
