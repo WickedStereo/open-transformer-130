@@ -1,12 +1,26 @@
 {
-  "DESIGN_NAME": "attention_stub",
+  "DESIGN_NAME": "attn_core",
   "VERILOG_FILES": [
-    "dir::../rtl/attention_stub.sv"
+    "dir::../rtl/attn_core.sv",
+    "dir::../rtl/bank_arbiter.sv",
+    "dir::../rtl/compute_engine.sv",
+    "dir::../rtl/dma_engine.sv",
+    "dir::../rtl/isa_decoder.sv",
+    "dir::../rtl/mac_array.sv",
+    "dir::../rtl/mac_lane.sv",
+    "dir::../rtl/mmio_regs.sv",
+    "dir::../rtl/perf_counters.sv",
+    "dir::../rtl/queue_ctrl.sv",
+    "dir::../rtl/scratchpad.sv",
+    "dir::../rtl/scratchpad_bank_1rw.sv",
+    "dir::../rtl/tile_scheduler.sv",
+    "dir::../rtl/vector_unit.sv"
   ],
   "CLOCK_PORT": "clk",
-  "CLOCK_PERIOD": 20,
+  "CLOCK_PERIOD": 10,
+  "PNR_SDC_FILE": "dir::attn_core.sdc",
   "FP_SIZING": "absolute",
-  "DIE_AREA": [0, 0, 300, 300],
+  "DIE_AREA": [0, 0, 800, 800],
   "FP_PDN_CORE_RING": false,
   "PL_TARGET_DENSITY_PCT": 60
 }

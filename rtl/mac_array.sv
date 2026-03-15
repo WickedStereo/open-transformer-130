@@ -1,7 +1,7 @@
 module mac_array #(
-    parameter int NUM_LANES     = 16,
-    parameter int OPERAND_WIDTH = 8,
-    parameter int ACCUM_WIDTH   = 32
+    parameter NUM_LANES     = 16,
+    parameter OPERAND_WIDTH = 8,
+    parameter ACCUM_WIDTH   = 32
 ) (
     input  logic                                clk,
     input  logic                                rst_n,
@@ -29,14 +29,12 @@ module mac_array #(
 );
 
     // ── FSM states ──
-    typedef enum logic [2:0] {
-        S_IDLE    = 3'd0,
-        S_COMPUTE = 3'd1,
-        S_DRAIN   = 3'd2,
-        S_OUTPUT  = 3'd3
-    } state_t;
+    localparam S_IDLE    = 3'd0;
+    localparam S_COMPUTE = 3'd1;
+    localparam S_DRAIN   = 3'd2;
+    localparam S_OUTPUT  = 3'd3;
 
-    state_t state;
+    logic [2:0] state;
 
     // Latched tile dimensions
     logic [7:0] dim_m_r, dim_k_r;

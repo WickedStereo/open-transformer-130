@@ -14,8 +14,10 @@ smtbmc z3
 [script]
 read -sv ../rtl/isa_decoder.sv
 read -sv isa_decoder_props.sv
-prep -top isa_decoder
+read -sv isa_decoder_formal.sv
+prep -top isa_decoder_formal
 
 [files]
 ../rtl/isa_decoder.sv
 isa_decoder_props.sv
+isa_decoder_formal.sv

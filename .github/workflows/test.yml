@@ -33,6 +33,7 @@ jobs:
             python3-pip \
             wget \
             yosys \
+            z3 \
             zlib1g-dev
 
       - name: Build and install Verilator 5.x
@@ -58,6 +59,9 @@ jobs:
 
       - name: Run Verilator lint
         run: make lint
+
+      - name: Run formal checks
+        run: make formal
 
       - name: Run cocotb pytest suite
         run: make test

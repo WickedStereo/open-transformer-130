@@ -1,6 +1,6 @@
 module tile_scheduler #(
-    parameter int NUM_SLOTS = 32,
-    parameter int SLOT_BITS = 5
+    parameter NUM_SLOTS = 32,
+    parameter SLOT_BITS = 5
 ) (
     input  logic                     clk,
     input  logic                     rst_n,
@@ -65,12 +65,14 @@ module tile_scheduler #(
 
     // ── Slot residency tracking ──
     // 2 bits per slot: 00=FREE, 01=LOADING, 10=RESIDENT, 11=STORING
-    localparam logic [1:0] SLOT_FREE     = 2'b00;
-    localparam logic [1:0] SLOT_LOADING  = 2'b01;
-    localparam logic [1:0] SLOT_RESIDENT = 2'b10;
-    localparam logic [1:0] SLOT_STORING  = 2'b11;
+    localparam SLOT_FREE     = 2'b00;
+    localparam SLOT_LOADING  = 2'b01;
+    localparam SLOT_RESIDENT = 2'b10;
+    localparam SLOT_STORING  = 2'b11;
 
     logic [1:0] slot_state [NUM_SLOTS];
+    integer slot_idx_comb;
+    integer slot_idx_ff;
 
     // Pack slot_state into flat output
     genvar si;
@@ -81,28 +83,26 @@ module tile_scheduler #(
     endgenerate
 
     // ── Action types (matching decoder output encoding) ──
-    localparam logic [2:0] ACT_NOP     = 3'd0;
-    localparam logic [2:0] ACT_DMA     = 3'd1;
-    localparam logic [2:0] ACT_COMPUTE = 3'd2;
-    localparam logic [2:0] ACT_VECTOR  = 3'd3;
-    localparam logic [2:0] ACT_CONFIG  = 3'd4;
-    localparam logic [2:0] ACT_BARRIER = 3'd5;
+    localparam ACT_NOP     = 3'd0;
+    localparam ACT_DMA     = 3'd1;
+    localparam ACT_COMPUTE = 3'd2;
+    localparam ACT_VECTOR  = 3'd3;
+    localparam ACT_CONFIG  = 3'd4;
+    localparam ACT_BARRIER = 3'd5;
 
     // ── FSM ──
-    typedef enum logic [3:0] {
-        ST_IDLE          = 4'd0,
-        ST_DECODE        = 4'd1,
-        ST_ISSUE_DMA     = 4'd2,
-        ST_WAIT_DMA      = 4'd3,
-        ST_ISSUE_COMPUTE = 4'd4,
-        ST_WAIT_COMPUTE  = 4'd5,
-        ST_ISSUE_VECTOR  = 4'd6,
-        ST_WAIT_VECTOR   = 4'd7,
-        ST_BARRIER_WAIT  = 4'd8,
-        ST_CONFIG_WRITE  = 4'd9
-    } sched_state_t;
+    localparam ST_IDLE          = 4'd0;
+    localparam ST_DECODE        = 4'd1;
+    localparam ST_ISSUE_DMA     = 4'd2;
+    localparam ST_WAIT_DMA      = 4'd3;
+    localparam ST_ISSUE_COMPUTE = 4'd4;
+    localparam ST_WAIT_COMPUTE  = 4'd5;
+    localparam ST_ISSUE_VECTOR  = 4'd6;
+    localparam ST_WAIT_VECTOR   = 4'd7;
+    localparam ST_BARRIER_WAIT  = 4'd8;
+    localparam ST_CONFIG_WRITE  = 4'd9;
 
-    sched_state_t sched_state;
+    logic [3:0] sched_state;
 
     // Latched action fields
     logic [2:0]          act_type_r;
@@ -120,8 +120,9 @@ module tile_scheduler #(
     logic any_inflight;
     always_comb begin
         any_inflight = 1'b0;
-        for (int s = 0; s < NUM_SLOTS; s++) begin
-            if (slot_state[s] == SLOT_LOADING || slot_state[s] == SLOT_STORING)
+        for (slot_idx_comb = 0; slot_idx_comb < NUM_SLOTS; slot_idx_comb = slot_idx_comb + 1) begin
+            if (slot_state[slot_idx_comb] == SLOT_LOADING ||
+                slot_state[slot_idx_comb] == SLOT_STORING)
                 any_inflight = 1'b1;
         end
     end
@@ -141,8 +142,9 @@ module tile_scheduler #(
     // DMA command outputs
     assign dma_cmd_valid      = (sched_state == ST_ISSUE_DMA);
     assign dma_cmd_load       = act_load_r;
-    assign dma_cmd_host_addr  = act_host_addr_r;
     assign dma_cmd_slot_id    = act_load_r ? act_dst_r : act_src_r;
+    assign dma_cmd_host_addr  = act_host_addr_r +
+                                ({27'd0, (act_load_r ? act_dst_r : act_src_r)} << 12);
     assign dma_cmd_byte_count = {5'b0, act_m_r} * {5'b0, act_n_r};
 
     // Compute command outputs
@@ -182,8 +184,8 @@ module tile_scheduler #(
             act_k_r         <= '0;
             act_flags_r     <= '0;
             act_host_addr_r <= '0;
-            for (int s = 0; s < NUM_SLOTS; s++)
-                slot_state[s] <= SLOT_FREE;
+            for (slot_idx_ff = 0; slot_idx_ff < NUM_SLOTS; slot_idx_ff = slot_idx_ff + 1)
+                slot_state[slot_idx_ff] <= SLOT_FREE;
         end else begin
             case (sched_state)
                 ST_IDLE: begin

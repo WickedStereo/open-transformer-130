@@ -14,8 +14,10 @@ smtbmc z3
 [script]
 read -sv ../rtl/mac_lane.sv
 read -sv mac_lane_props.sv
-prep -top mac_lane
+read -sv mac_lane_formal.sv
+prep -top mac_lane_formal
 
 [files]
 ../rtl/mac_lane.sv
 mac_lane_props.sv
+mac_lane_formal.sv

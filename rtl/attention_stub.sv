@@ -1,5 +1,5 @@
 module attention_stub #(
-    parameter int WIDTH = 32
+    parameter WIDTH = 32
 ) (
     input  logic             clk,
     input  logic             reset,

@@ -1,6 +1,6 @@
 module mac_lane #(
-    parameter int OPERAND_WIDTH = 8,
-    parameter int ACCUM_WIDTH   = 32
+    parameter OPERAND_WIDTH = 8,
+    parameter ACCUM_WIDTH   = 32
 ) (
     input  logic                       clk,
     input  logic                       rst_n,
@@ -12,7 +12,7 @@ module mac_lane #(
     output logic                       lane_busy
 );
 
-    localparam int PROD_WIDTH = 2 * OPERAND_WIDTH;
+    localparam PROD_WIDTH = 2 * OPERAND_WIDTH;
 
     // ── Stage 1: Operand capture ──
     logic                     s1_valid;

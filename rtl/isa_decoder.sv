@@ -47,27 +47,27 @@ module isa_decoder (
     wire [3:0] reserved     = desc_data[3:0];
 
     // ── Opcode constants ──
-    localparam logic [7:0] OP_NOP        = 8'h00;
-    localparam logic [7:0] OP_LOAD_TILE  = 8'h01;
-    localparam logic [7:0] OP_STORE_TILE = 8'h02;
-    localparam logic [7:0] OP_MATMUL     = 8'h03;
-    localparam logic [7:0] OP_ACCUMULATE = 8'h04;
-    localparam logic [7:0] OP_SOFTMAX    = 8'h05;
-    localparam logic [7:0] OP_CONFIG     = 8'h06;
-    localparam logic [7:0] OP_BARRIER    = 8'h07;
+    localparam OP_NOP        = 8'h00;
+    localparam OP_LOAD_TILE  = 8'h01;
+    localparam OP_STORE_TILE = 8'h02;
+    localparam OP_MATMUL     = 8'h03;
+    localparam OP_ACCUMULATE = 8'h04;
+    localparam OP_SOFTMAX    = 8'h05;
+    localparam OP_CONFIG     = 8'h06;
+    localparam OP_BARRIER    = 8'h07;
 
     // ── Action type encoding ──
-    localparam logic [2:0] ACT_NOP     = 3'd0;
-    localparam logic [2:0] ACT_DMA     = 3'd1;
-    localparam logic [2:0] ACT_COMPUTE = 3'd2;
-    localparam logic [2:0] ACT_VECTOR  = 3'd3;
-    localparam logic [2:0] ACT_CONFIG  = 3'd4;
-    localparam logic [2:0] ACT_BARRIER = 3'd5;
+    localparam ACT_NOP     = 3'd0;
+    localparam ACT_DMA     = 3'd1;
+    localparam ACT_COMPUTE = 3'd2;
+    localparam ACT_VECTOR  = 3'd3;
+    localparam ACT_CONFIG  = 3'd4;
+    localparam ACT_BARRIER = 3'd5;
 
     // ── Fault cause encoding ──
-    localparam logic [1:0] FC_RESERVED_FIELD = 2'b00;
-    localparam logic [1:0] FC_INVALID_OPCODE = 2'b01;
-    localparam logic [1:0] FC_TILE_OOB       = 2'b10;
+    localparam FC_RESERVED_FIELD = 2'b00;
+    localparam FC_INVALID_OPCODE = 2'b01;
+    localparam FC_TILE_OOB       = 2'b10;
 
     // ── Fault state ──
     logic fault_latched;
@@ -142,13 +142,10 @@ module isa_decoder (
     // Decoder is single-cycle: present decoded results when desc_valid is high
     // and no fault is latched. Hold outputs until action_ready.
 
-    typedef enum logic [1:0] {
-        DEC_IDLE = 2'd0,
-        DEC_PRESENT = 2'd1,
-        DEC_FAULT = 2'd2
-    } dec_state_t;
+    localparam DEC_IDLE    = 2'd0;
+    localparam DEC_PRESENT = 2'd1;
 
-    dec_state_t dec_state;
+    logic [1:0] dec_state;
 
     always_ff @(posedge clk) begin
         if (!rst_n) begin

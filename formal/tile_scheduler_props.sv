@@ -1,6 +1,6 @@
 module tile_scheduler_props #(
-    parameter int NUM_SLOTS = 32,
-    parameter int SLOT_BITS = 5
+    parameter NUM_SLOTS = 32,
+    parameter SLOT_BITS = 5
 ) (
     input logic        clk,
     input logic        rst_n,
@@ -17,46 +17,31 @@ module tile_scheduler_props #(
     input logic        compute_done,
     input logic        vector_done
 );
+    logic seen_busy;
 
-    // Extract slot states
-    wire [1:0] slot [NUM_SLOTS];
-    genvar gi;
-    generate
-        for (gi = 0; gi < NUM_SLOTS; gi++) begin : gen_slots
-            assign slot[gi] = slot_state_out[gi*2 +: 2];
+    initial seen_busy = 1'b0;
+
+    always_ff @(posedge clk) begin
+        if (!rst_n) begin
+            seen_busy <= 1'b0;
+        end else begin
+            if (busy)
+                seen_busy <= 1'b1;
+
+            assert (!(dma_cmd_valid && compute_cmd_valid));
+            assert (!(dma_cmd_valid && vector_cmd_valid));
+            assert (!(compute_cmd_valid && vector_cmd_valid));
+
+            if (action_ready)
+                assert (!busy && enable);
+
+            if (seen_busy)
+                cover (!busy);
         end
-    endgenerate
+    end
 
-    // P1: At most one command type issued per cycle
-    property p_single_issue;
-        @(posedge clk) disable iff (!rst_n)
-            $onehot0({dma_cmd_valid, compute_cmd_valid, vector_cmd_valid});
-    endproperty
-    assert property (p_single_issue)
-        else $error("FORMAL: multiple command types issued simultaneously");
-
-    // P2: action_ready only when IDLE and enabled
-    property p_ready_when_idle;
-        @(posedge clk) disable iff (!rst_n)
-            action_ready |-> (!busy && enable);
-    endproperty
-    assert property (p_ready_when_idle)
-        else $error("FORMAL: action_ready asserted while busy or disabled");
-
-    // P3: Slot state transitions are valid (no LOADING->STORING directly)
-    // LOADING can only go to RESIDENT or FREE (on error)
-    // STORING can only go to FREE
-
-    // P4: busy flag matches non-IDLE state
-    // (busy is defined as state != ST_IDLE in the implementation)
-
-    // P5: No deadlock -- every non-IDLE state has a path back to IDLE
-    // This is a liveness property best checked with bounded model checking.
-    // Cover: from any state, IDLE is eventually reachable.
-    property p_no_permanent_busy;
-        @(posedge clk) disable iff (!rst_n)
-            busy |-> ##[1:500] !busy;
-    endproperty
-    cover property (p_no_permanent_busy);
+    logic _unused;
+    assign _unused = &{1'b0, action_valid, action_type, slot_state_out,
+                       dma_done, compute_done, vector_done};
 
 endmodule

@@ -31,4 +31,4 @@ This directory is the program-management and technical-decision hub for the tran
 
 ## Relationship to the repository
 
-The root [README](../../README.md) describes the codebase as a starter scaffold. These docs preserve that truth while defining the path toward the full accelerator target, including architecture exploration, RTL, FPGA, Caravel integration, physical design, and post-silicon validation.
+The root [README](../../README.md) now describes the repository as an integrated prototype rather than a pure scaffold. These progress docs remain the source of truth for what is already implemented, what is only planned, and which evidence supports each claim.

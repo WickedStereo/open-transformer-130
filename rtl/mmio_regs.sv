@@ -42,22 +42,22 @@ module mmio_regs (
 );
 
     // ── Register offsets (byte address, bits [5:2] select register) ──
-    localparam logic [3:0] REG_CTRL           = 4'h0;   // 0x00
-    localparam logic [3:0] REG_STATUS         = 4'h1;   // 0x04
-    localparam logic [3:0] REG_QUEUE_BASE     = 4'h2;   // 0x08
-    localparam logic [3:0] REG_QUEUE_SIZE     = 4'h3;   // 0x0C
-    localparam logic [3:0] REG_CMD_HEAD       = 4'h4;   // 0x10
-    localparam logic [3:0] REG_CMD_TAIL       = 4'h5;   // 0x14
-    localparam logic [3:0] REG_FAULT_INFO     = 4'h6;   // 0x18
-    localparam logic [3:0] REG_DEFAULT_M      = 4'h7;   // 0x1C
-    localparam logic [3:0] REG_DEFAULT_N      = 4'h8;   // 0x20
-    localparam logic [3:0] REG_DEFAULT_K      = 4'h9;   // 0x24
-    localparam logic [3:0] REG_PERF_BUSY      = 4'hA;   // 0x28
-    localparam logic [3:0] REG_PERF_STALL     = 4'hB;   // 0x2C
-    localparam logic [3:0] REG_PERF_DMA       = 4'hC;   // 0x30
-    localparam logic [3:0] REG_PERF_TILE      = 4'hD;   // 0x34
-    localparam logic [3:0] REG_DMA_HOST_ADDR  = 4'hE;   // 0x38
-    localparam logic [3:0] REG_SCRATCH_BASE   = 4'hF;   // 0x3C
+    localparam REG_CTRL           = 4'h0;   // 0x00
+    localparam REG_STATUS         = 4'h1;   // 0x04
+    localparam REG_QUEUE_BASE     = 4'h2;   // 0x08
+    localparam REG_QUEUE_SIZE     = 4'h3;   // 0x0C
+    localparam REG_CMD_HEAD       = 4'h4;   // 0x10
+    localparam REG_CMD_TAIL       = 4'h5;   // 0x14
+    localparam REG_FAULT_INFO     = 4'h6;   // 0x18
+    localparam REG_DEFAULT_M      = 4'h7;   // 0x1C
+    localparam REG_DEFAULT_N      = 4'h8;   // 0x20
+    localparam REG_DEFAULT_K      = 4'h9;   // 0x24
+    localparam REG_PERF_BUSY      = 4'hA;   // 0x28
+    localparam REG_PERF_STALL     = 4'hB;   // 0x2C
+    localparam REG_PERF_DMA       = 4'hC;   // 0x30
+    localparam REG_PERF_TILE      = 4'hD;   // 0x34
+    localparam REG_DMA_HOST_ADDR  = 4'hE;   // 0x38
+    localparam REG_SCRATCH_BASE   = 4'hF;   // 0x3C
 
     wire [3:0] reg_sel = mmio_addr[5:2];
 

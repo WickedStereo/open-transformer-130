@@ -1,9 +1,9 @@
 module attn_core #(
-    parameter int NUM_BANKS     = 8,
-    parameter int BANK_SIZE     = 16384,
-    parameter int BANK_ADDR_W   = 14,
-    parameter int DATA_W        = 8,
-    parameter int SLOT_BITS     = 5
+    parameter NUM_BANKS     = 8,
+    parameter BANK_SIZE     = 16384,
+    parameter BANK_ADDR_W   = 14,
+    parameter DATA_W        = 8,
+    parameter SLOT_BITS     = 5
 ) (
     input  logic        clk,
     input  logic        rst_n,
@@ -263,31 +263,45 @@ module attn_core #(
 
     assign status_dma_active = !dma_cmd_ready;
 
-    // ── MAC array (stub for integration -- full data-fetch logic is system-level) ──
-    // The MAC array receives compute commands but data-fetch from scratchpad
-    // requires address generation logic. For integration, we stub the MAC
-    // interface and mark compute_done after a fixed latency.
-    assign compute_cmd_ready = 1'b1;
-    assign status_compute_active = 1'b0;
+    // ── Compute engine ──
+    logic [NUM_BANKS-1:0]              mac_scratch_req;
+    logic [NUM_BANKS*BANK_ADDR_W-1:0]  mac_scratch_addr;
+    logic [NUM_BANKS-1:0]              mac_scratch_wen;
+    logic [NUM_BANKS*DATA_W-1:0]       mac_scratch_wdata;
+    logic [NUM_BANKS-1:0]              mac_scratch_grant;
+    logic [NUM_BANKS*DATA_W-1:0]       mac_scratch_rdata;
+    logic                              compute_busy;
 
-    logic [7:0] compute_timer;
-    logic       compute_pending;
-    assign compute_done = (compute_pending && compute_timer == 8'd0);
+    compute_engine #(
+        .NUM_BANKS   (NUM_BANKS),
+        .BANK_ADDR_W (BANK_ADDR_W),
+        .DATA_W      (DATA_W),
+        .SLOT_BITS   (SLOT_BITS)
+    ) u_compute (
+        .clk           (clk),
+        .rst_n         (rst_n),
+        .cmd_valid     (compute_cmd_valid),
+        .cmd_ready     (compute_cmd_ready),
+        .cmd_src_slot  (compute_src_slot),
+        .cmd_src2_slot (compute_src2_slot),
+        .cmd_dst_slot  (compute_dst_slot),
+        .cmd_dim_m     (compute_dim_m),
+        .cmd_dim_n     (compute_dim_n),
+        .cmd_dim_k     (compute_dim_k),
+        .cmd_accum     (compute_accum),
+        .cmd_saturate  (compute_saturate),
+        .cmd_shift     (compute_shift),
+        .done          (compute_done),
+        .busy          (compute_busy),
+        .scratch_req   (mac_scratch_req),
+        .scratch_addr  (mac_scratch_addr),
+        .scratch_wen   (mac_scratch_wen),
+        .scratch_wdata (mac_scratch_wdata),
+        .scratch_grant (mac_scratch_grant),
+        .scratch_rdata (mac_scratch_rdata)
+    );
 
-    always_ff @(posedge clk) begin
-        if (!rst_n) begin
-            compute_timer   <= '0;
-            compute_pending <= 1'b0;
-        end else if (compute_cmd_valid && compute_cmd_ready) begin
-            compute_timer   <= 8'd4;
-            compute_pending <= 1'b1;
-        end else if (compute_pending) begin
-            if (compute_timer == 8'd0)
-                compute_pending <= 1'b0;
-            else
-                compute_timer <= compute_timer - 8'd1;
-        end
-    end
+    assign status_compute_active = compute_busy;
 
     // ── Vector unit ──
     logic [NUM_BANKS-1:0]              vec_scratch_req;
@@ -324,19 +338,6 @@ module attn_core #(
     );
 
     // ── Bank arbiter ──
-    // MAC scratch port: tied off (MAC data-fetch not yet wired)
-    logic [NUM_BANKS-1:0]              mac_scratch_req;
-    logic [NUM_BANKS*BANK_ADDR_W-1:0]  mac_scratch_addr;
-    logic [NUM_BANKS-1:0]              mac_scratch_wen;
-    logic [NUM_BANKS*DATA_W-1:0]       mac_scratch_wdata;
-    logic [NUM_BANKS-1:0]              mac_scratch_grant;
-    logic [NUM_BANKS*DATA_W-1:0]       mac_scratch_rdata;
-
-    assign mac_scratch_req   = '0;
-    assign mac_scratch_addr  = '0;
-    assign mac_scratch_wen   = '0;
-    assign mac_scratch_wdata = '0;
-
     logic [NUM_BANKS-1:0]              bank_en;
     logic [NUM_BANKS-1:0]              bank_wen;
     logic [NUM_BANKS*BANK_ADDR_W-1:0]  bank_addr;
@@ -400,7 +401,7 @@ module attn_core #(
         .soft_reset      (ctrl_soft_reset),
         .busy_inc        (perf_busy_inc),
         .stall_inc       (perf_stall_inc),
-        .dma_bytes_inc   (32'd16),
+        .dma_bytes_inc   (dma_bytes_moved),
         .dma_bytes_valid (dma_done),
         .tile_inc        (perf_tile_inc),
         .busy_cycles     (perf_busy_cycles),

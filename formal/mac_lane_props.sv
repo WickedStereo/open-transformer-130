@@ -1,6 +1,6 @@
 module mac_lane_props #(
-    parameter int OPERAND_WIDTH = 8,
-    parameter int ACCUM_WIDTH   = 32
+    parameter OPERAND_WIDTH = 8,
+    parameter ACCUM_WIDTH   = 32
 ) (
     input logic                       clk,
     input logic                       rst_n,
@@ -12,33 +12,32 @@ module mac_lane_props #(
     input logic                       lane_busy
 );
 
-    // P1: After reset, accumulator is zero
-    property p_reset_clears_accum;
-        @(posedge clk) !rst_n |=> (accum_out == '0);
-    endproperty
-    assert property (p_reset_clears_accum)
-        else $error("FORMAL: accumulator not zero after reset");
+    logic f_past_valid;
+    logic [1:0] idle_cycles;
 
-    // P2: Accumulator always in valid INT32 range (bounded by construction)
-    // This is trivially true for 32-bit register, but documents the intent
-    // for wider accumulator experiments.
-    property p_accum_bounded;
-        @(posedge clk) disable iff (!rst_n)
-            1'b1 |-> ($signed(accum_out) >= -(2**(ACCUM_WIDTH-1))) &&
-                      ($signed(accum_out) <= (2**(ACCUM_WIDTH-1))-1);
-    endproperty
-    assert property (p_accum_bounded)
-        else $error("FORMAL: accumulator out of INT32 range");
+    initial begin
+        f_past_valid = 1'b0;
+        idle_cycles = '0;
+    end
 
-    // P3: lane_busy deasserts after pipeline drains (within 3 cycles of no input)
-    property p_busy_drains;
-        @(posedge clk) disable iff (!rst_n)
-            (!op_valid ##1 !op_valid ##1 !op_valid) |-> !lane_busy;
-    endproperty
-    // Cover rather than assert: pipeline timing is design-dependent
-    cover property (p_busy_drains);
+    always_ff @(posedge clk) begin
+        f_past_valid <= 1'b1;
 
-    // P4: accum_clear when valid resets accumulator to product only
-    // (accumulator = op_a * op_b after pipeline latency, no previous state)
+        if (!rst_n) begin
+            idle_cycles <= '0;
+            assert (accum_out == '0);
+        end else begin
+            assert ($signed(accum_out) >= -(2**(ACCUM_WIDTH-1)));
+            assert ($signed(accum_out) <= (2**(ACCUM_WIDTH-1))-1);
+
+            if (op_valid)
+                idle_cycles <= '0;
+            else if (idle_cycles != 2'd3)
+                idle_cycles <= idle_cycles + 2'd1;
+
+            if (idle_cycles == 2'd3)
+                cover (!lane_busy);
+        end
+    end
 
 endmodule

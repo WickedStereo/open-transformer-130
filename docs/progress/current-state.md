@@ -1,67 +1,71 @@
 # Current Repository State
 
 Date: 2026-03-15
-Status: integrated core / FPGA-ready
+Status: integrated prototype / de-risked baseline
 
 ## Executive summary
 
-The repository has completed Sprints 00-07: architecture exploration, microarchitecture design, block-level RTL implementation, formal property definition, and system integration. The integrated accelerator core (`attn_core`) assembles all major blocks with a working MMIO control plane, command queue, ISA decoder, tile scheduler, DMA engine, scratchpad memory, vector/softmax unit, bank arbiter, and performance counters. Full regression passes 22 tests across unit, numeric, and integration levels.
+The repository now contains a real integrated `attn_core` baseline rather than a placeholder-only top. The current implementation supports a working `LOAD_TILE -> MATMUL -> SOFTMAX -> STORE_TILE` path over scratchpad-resident INT8 tiles, with the compute engine prefetching operands from scratchpad, the vector unit performing row-wise fixed-point softmax, and the DMA path honoring the documented 1-cycle scratchpad read latency.
+
+The verification baseline is materially stronger than before:
+
+- `make lint` passes.
+- `make test` passes `29` cocotb regressions.
+- The repo now includes standalone benches for `queue_ctrl`, `dma_engine`, `vector_unit`, `tile_scheduler`, `perf_counters`, and `compute_engine`, plus an end-to-end `attn_core` scoreboard test.
+- Formal harnesses are attached under `formal/`, Yosys can elaborate them into SMT2 locally, and CI is configured to run `make formal` where the solver is available.
+
+The repo is still not tapeout-ready. The integrated top is now backend-relevant, but the scratchpad is still backed by a behavioral model behind a macro-style wrapper, there is no OpenRAM-generated macro collateral yet, and the software/compiler/Caravel workstreams remain largely unimplemented.
 
 ## Implemented baseline
 
 | Area | Current status | Evidence |
 | --- | --- | --- |
-| Repository structure | Starter scaffold established | [README](../../README.md) |
-| Dev environment | Containerized environment with Verilator, Yosys, nextpnr, OpenLane Python package, Python ML stack, RISC-V toolchain, and explicit `pytest` support for `make test` | [.devcontainer/devcontainer.json](../../.devcontainer/devcontainer.json), [docker/Dockerfile](../../docker/Dockerfile) |
-| Bootstrap validation | `make doctor` checks required tools and reports optional later-sprint gaps | [Makefile](../../Makefile), [scripts/bootstrap_doctor.py](../../scripts/bootstrap_doctor.py) |
-| CI | Bootstrap, lint, and cocotb test workflow exists | [.github/workflows/test.yml](../../.github/workflows/test.yml) |
-| Project intake | Issue templates exist for architecture, implementation, and verification work | [.github/ISSUE_TEMPLATE/architecture-study.yml](../../.github/ISSUE_TEMPLATE/architecture-study.yml), [.github/ISSUE_TEMPLATE/implementation-task.yml](../../.github/ISSUE_TEMPLATE/implementation-task.yml), [.github/ISSUE_TEMPLATE/verification-task.yml](../../.github/ISSUE_TEMPLATE/verification-task.yml) |
-| RTL | Single placeholder module only | [rtl/attention_stub.sv](../../rtl/attention_stub.sv) |
-| Golden model | Expanded: float, quantized, and tiled-quantized attention with online softmax, precision configs, comparison utilities | [sim/reference_attention.py](../../sim/reference_attention.py) |
-| Performance model | Analytical: tile sweeps, DMA overlap sensitivity, scratchpad feasibility | [sim/performance_model.py](../../sim/performance_model.py) |
-| Numeric study | Automated: 15 tests covering quantized accuracy, tiled agreement, and edge cases | [sim/test_numeric_study.py](../../sim/test_numeric_study.py) |
-| Architecture | Frozen baseline: INT8/INT32, 64x64 tile, 128 KiB scratchpad, 8-opcode ISA | [architecture/](architecture/), [decisions/](decisions/) |
-| Microarchitecture | All blocks spec'd: compute, memory, control, vector/softmax, debug, interfaces | [microarchitecture/](microarchitecture/) |
-| Verification plan | Comparison hierarchy, scoreboard structure, test vectors, formal targets defined | [reports/2026-03-15-verification-plan.md](reports/2026-03-15-verification-plan.md) |
-| Verification matrix | 73 items across 10 blocks mapped to Sprints 03-07 | [reports/2026-03-15-verification-matrix.md](reports/2026-03-15-verification-matrix.md) |
-| Physical awareness | Area estimates, clock/reset conventions, SKY130 technology notes | [microarchitecture/physical-awareness.md](microarchitecture/physical-awareness.md) |
-| Simulation | C++ Verilator smoke path and cocotb test skeleton exist | [sim/main.cpp](../../sim/main.cpp), [sim/test_attention.py](../../sim/test_attention.py) |
-| FPGA | Placeholder README only; no board-specific wrapper or constraints checked in | [fpga/README.md](../../fpga/README.md) |
-| ASIC flow | OpenLane smoke configuration for the stub module exists | [openlane/config.json](../../openlane/config.json) |
-| Make targets | Core commands wired for lint, sim, test, fpga, and gds flows | [Makefile](../../Makefile) |
+| Repository structure | Working accelerator prototype with integrated RTL, tests, and backend entry points | [README](../../README.md) |
+| Dev environment | Containerized environment with Verilator, Yosys, nextpnr, OpenLane Python package, and Python verification tooling | [.devcontainer/devcontainer.json](../../.devcontainer/devcontainer.json), [docker/Dockerfile](../../docker/Dockerfile) |
+| Bootstrap validation | `make doctor` still checks required tools and reports optional gaps | [Makefile](../../Makefile), [scripts/bootstrap_doctor.py](../../scripts/bootstrap_doctor.py) |
+| CI | Lint, cocotb regression, and formal targets are wired in workflow | [.github/workflows/test.yml](../../.github/workflows/test.yml) |
+| RTL top | `attn_core` integrates MMIO, queue control, decoder, scheduler, DMA, compute, vector, arbiter, scratchpad, and counters | [rtl/attn_core.sv](../../rtl/attn_core.sv) |
+| Compute datapath | `compute_engine` replaces the old fixed-latency stub and drives a real scratchpad-backed MAC flow | [rtl/compute_engine.sv](../../rtl/compute_engine.sv), [rtl/mac_array.sv](../../rtl/mac_array.sv) |
+| DMA behavior | Host <-> scratchpad transfers now exercise both load and store paths with correct scratchpad read timing | [rtl/dma_engine.sv](../../rtl/dma_engine.sv), [sim/test_dma_engine.py](../../sim/test_dma_engine.py) |
+| Vector path | Row-wise softmax now matches the 4 KiB slot model by consuming INT8 score tiles and emitting fixed-point INT8 weights | [rtl/vector_unit.sv](../../rtl/vector_unit.sv), [sim/test_vector_unit.py](../../sim/test_vector_unit.py) |
+| Scratchpad | 8-bank scratchpad remains behavioral, but each bank now sits behind a dedicated `scratchpad_bank_1rw` wrapper for future SRAM replacement | [rtl/scratchpad.sv](../../rtl/scratchpad.sv), [rtl/scratchpad_bank_1rw.sv](../../rtl/scratchpad_bank_1rw.sv) |
+| Golden models | Float/quantized attention reference plus RTL-oriented scoreboard helpers exist | [sim/reference_attention.py](../../sim/reference_attention.py), [sim/rtl_scoreboard.py](../../sim/rtl_scoreboard.py) |
+| Verification evidence | Cocotb unit + integration suite passes `29` tests locally | [sim/](../../sim/) |
+| Formal setup | Formal property harnesses are attached and elaborate through Yosys; CI now invokes `make formal` | [formal/](../../formal/), [Makefile](../../Makefile) |
+| FPGA/front-end synthesis | `attn_core` is now the default synthesis top and the RTL elaborates successfully through Yosys front-end into [build/fpga/attn_core_hierarchy.json](../../build/fpga/attn_core_hierarchy.json) | [Makefile](../../Makefile), [fpga/README.md](../../fpga/README.md) |
+| ASIC flow | OpenLane now targets `attn_core`, uses an explicit SDC, and sees the scratchpad through bank wrappers | [openlane/config.json](../../openlane/config.json), [openlane/attn_core.sdc](../../openlane/attn_core.sdc) |
 
-## What is missing relative to the target program
+## What is still missing relative to the target program
 
-- No `attn_core` or sub-block RTL such as MAC array, scratchpad, DMA, scheduler, vector unit, softmax unit, or ISA decoder.
-- No Caravel-specific directories, wrappers, Wishbone bridge logic, logic-analyzer hookups, or user project integration collateral.
-- No OpenRAM configuration or generated SRAM macros.
-- No SymbiYosys formal setup or module property suites.
-- No integrated OpenROAD or OpenSTA backend analysis flow beyond the current OpenLane smoke path.
-- No compiler lowering or ONNX-to-command pipeline in [compiler/](../../compiler/).
-- No firmware driver or runtime implementation in [software/](../../software/).
-- No board-specific FPGA design collateral beyond a placeholder README.
-- No performance-modeling scripts beyond the analytical model. No cycle-accurate or RTL-derived benchmark reports yet.
+- No end-to-end Q/K/V attention sequence in the integrated top yet; the de-risked hardware baseline currently validates the first `MATMUL -> SOFTMAX` half of the pipeline plus store-back.
+- No OpenRAM configuration, generated SRAM macros, LEF/lib timing views, or macro integration collateral beyond the new wrapper boundary.
+- No Caravel-specific wrappers, Wishbone bridge, logic-analyzer hookups, or user-project integration collateral.
+- No software runtime, firmware driver, or compiler lowering pipeline in [software/](../../software/) and [compiler/](../../compiler/).
+- No board-specific FPGA wrapper or constraints beyond the retargeted synthesis smoke flow.
+- No local formal proof run was completed in this environment because the SMT solver binary is not installed here, even though the harnesses and CI hook are now in place.
 
-## Available starting points
+## Available command set
 
-- `make doctor` validates the Sprint 00 bootstrap baseline and flags optional environment gaps.
-- `make lint` checks SystemVerilog sources with Verilator.
-- `make test` runs the Python/cocotb-based simulation path.
-- `make fpga ICE40_ARCH=... ICE40_PACKAGE=...` exercises the current starter iCE40 flow.
-- `make gds PDK_ROOT=$PDK_ROOT` exercises the OpenLane smoke path for the placeholder design.
+- `make doctor` validates the environment baseline.
+- `make lint` checks the full RTL set with Verilator.
+- `make test` runs the full cocotb regression suite.
+- `make formal` runs the formal jobs when an SMT solver such as `z3` is installed.
+- `make sim` now defaults to the integrated `attn_core` top.
+- `make fpga ICE40_ARCH=... ICE40_PACKAGE=...` targets the integrated top for the existing iCE40 flow.
+- `make gds PDK_ROOT=$PDK_ROOT` launches OpenLane against the `attn_core` configuration.
 
-## Implications for planning
+## Planning implications
 
-- Sprints 03-05 (MAC RTL, memory RTL, vector RTL) can proceed in parallel with frozen interfaces.
-- Each block has signal-level interface tables, verification targets, and golden-model checkpoints.
-- The verification matrix provides a concrete test plan: 54 unit tests, 16 formal properties, 3 integration tests.
-- Physical-awareness notes identify MAC lane count and scratchpad capacity as the parameters most likely to change after synthesis.
-- Caravel integration must be planned as a new workstream, because the repository does not yet contain a Caravel subtree.
+- The highest-risk integration gaps from the earlier audit are closed enough to support real block-to-block debugging rather than placeholder orchestration.
+- The next major engineering step is broadening the integrated datapath from score-generation + softmax to full attention sequencing and software/runtime co-design.
+- Backend work can now proceed against a realistic top-level netlist boundary, but area/timing numbers will remain distorted until the scratchpad wrapper is swapped to real SRAM macros.
 
 ## Reference reports
 
-- [2026-03-15 Baseline Repo Audit](reports/2026-03-15-baseline-repo-audit.md) (Sprint 00)
-- [2026-03-15 Sprint 00 Bootstrap](reports/2026-03-15-sprint-00-bootstrap.md) (Sprint 00)
-- [2026-03-15 Architecture Study](reports/2026-03-15-architecture-study.md) (Sprint 01)
-- [2026-03-15 Verification Plan](reports/2026-03-15-verification-plan.md) (Sprint 01)
-- [2026-03-15 Verification Matrix](reports/2026-03-15-verification-matrix.md) (Sprint 02)
+- [2026-03-15 Baseline Repo Audit](reports/2026-03-15-baseline-repo-audit.md)
+- [2026-03-15 Architecture Study](reports/2026-03-15-architecture-study.md)
+- [2026-03-15 Verification Plan](reports/2026-03-15-verification-plan.md)
+- [2026-03-15 Verification Matrix](reports/2026-03-15-verification-matrix.md)
+- [2026-03-15 System Integration](reports/2026-03-15-system-integration.md)
+- [2026-03-15 Formal Verification](reports/2026-03-15-formal-verification.md)
+- [2026-03-15 ASIC De-risking Update](reports/2026-03-15-asic-de-risking-update.md)

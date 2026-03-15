@@ -14,8 +14,10 @@ smtbmc z3
 [script]
 read -sv ../rtl/tile_scheduler.sv
 read -sv tile_scheduler_props.sv
-prep -top tile_scheduler
+read -sv tile_scheduler_formal.sv
+prep -top tile_scheduler_formal
 
 [files]
 ../rtl/tile_scheduler.sv
 tile_scheduler_props.sv
+tile_scheduler_formal.sv

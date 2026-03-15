@@ -1,21 +1,25 @@
-TOP ?= attention_stub
+TOP ?= attn_core
 PYTHON ?= python3
 VERILATOR ?= verilator
 OPENLANE ?= $(PYTHON) -m openlane
 DOCTOR ?= $(PYTHON) scripts/bootstrap_doctor.py
+YOSYS ?= yosys
+SMTBMC ?= yosys-smtbmc
+FORMAL_SOLVER ?= z3
 OPENLANE_RUN_DIR ?= $(CURDIR)
 ifdef HOST_WORKSPACE
 OPENLANE_RUN_DIR := $(HOST_WORKSPACE)
 endif
 OPENLANE_CONFIG ?= $(OPENLANE_RUN_DIR)/openlane/config.json
 BUILD_DIR ?= build
+FORMAL_BUILD_DIR ?= $(BUILD_DIR)/formal
 RTL_SRCS := $(wildcard rtl/*.sv)
 SIM_MAIN := sim/main.cpp
-FPGA_SRC ?= rtl/attention_stub.sv
+FPGA_SRC ?= $(RTL_SRCS)
 ICE40_ARCH ?=
 ICE40_PACKAGE ?=
 
-.PHONY: doctor sim lint test fpga gds clean
+.PHONY: doctor sim lint test formal formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler fpga gds clean
 
 doctor:
 	$(DOCTOR)
@@ -34,6 +38,28 @@ lint:
 
 test:
 	PYTHONPATH=$(CURDIR) $(PYTHON) -m pytest -q sim/
+
+formal: formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler
+
+formal-mac-lane:
+	mkdir -p $(FORMAL_BUILD_DIR)
+	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/mac_lane.sv formal/mac_lane_props.sv formal/mac_lane_formal.sv; prep -top mac_lane_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/mac_lane.smt2'
+	$(SMTBMC) -s $(FORMAL_SOLVER) -t 20 $(FORMAL_BUILD_DIR)/mac_lane.smt2
+
+formal-isa-decoder:
+	mkdir -p $(FORMAL_BUILD_DIR)
+	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/isa_decoder.sv formal/isa_decoder_props.sv formal/isa_decoder_formal.sv; prep -top isa_decoder_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/isa_decoder.smt2'
+	$(SMTBMC) -s $(FORMAL_SOLVER) -t 20 $(FORMAL_BUILD_DIR)/isa_decoder.smt2
+
+formal-dma-engine:
+	mkdir -p $(FORMAL_BUILD_DIR)
+	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/dma_engine.sv formal/dma_engine_props.sv formal/dma_engine_formal.sv; prep -top dma_engine_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/dma_engine.smt2'
+	$(SMTBMC) -s $(FORMAL_SOLVER) -t 30 $(FORMAL_BUILD_DIR)/dma_engine.smt2
+
+formal-tile-scheduler:
+	mkdir -p $(FORMAL_BUILD_DIR)
+	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/tile_scheduler.sv formal/tile_scheduler_props.sv formal/tile_scheduler_formal.sv; prep -top tile_scheduler_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/tile_scheduler.smt2'
+	$(SMTBMC) -s $(FORMAL_SOLVER) -t 30 $(FORMAL_BUILD_DIR)/tile_scheduler.smt2
 
 fpga:
 	@if [ -z "$(ICE40_ARCH)" ] || [ -z "$(ICE40_PACKAGE)" ]; then \

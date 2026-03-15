@@ -8,8 +8,11 @@ import os
 from pathlib import Path
 
 import cocotb
+import numpy as np
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
+
+from sim.rtl_scoreboard import Scoreboard, descriptor, matmul_tile, softmax_fixed
 
 try:
     from cocotb.runner import get_runner
@@ -18,14 +21,7 @@ except ModuleNotFoundError:
 
 
 def make_descriptor(opcode, flags=0, dst=0, src=0, m=0, n=0, k=0, tag=0):
-    return ((opcode & 0xFF) << 56 |
-            (flags & 0xFF) << 48 |
-            (dst & 0xFF) << 40 |
-            (src & 0xFF) << 32 |
-            (m & 0xFF) << 24 |
-            (n & 0xFF) << 16 |
-            (k & 0xFF) << 8 |
-            (tag & 0xF) << 4)
+    return descriptor(opcode, flags=flags, dst=dst, src=src, m=m, n=n, k=k, tag=tag)
 
 
 async def reset(dut, cycles=5):
@@ -285,6 +281,70 @@ async def test_soft_reset(dut):
     assert busy == 0, "perf counter should be cleared"
 
 
+@cocotb.test()
+async def test_end_to_end_matmul_softmax_store(dut):
+    """Run LOAD -> LOAD -> MATMUL -> SOFTMAX -> STORE against a golden model."""
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    await reset(dut)
+
+    lhs = np.array([[2, 1], [1, 3]], dtype=np.int8)
+    rhs = np.array([[1, -1], [2, 1]], dtype=np.int8)
+    scores = matmul_tile(lhs, rhs, shift=0, saturate=True)
+    weights = softmax_fixed(scores)
+
+    sb = Scoreboard()
+    sb.input_stimulus["lhs"] = lhs
+    sb.input_stimulus["rhs"] = rhs
+    sb.golden_outputs["scores"] = scores
+    sb.golden_outputs["weights"] = weights
+
+    host_mem = {}
+    for idx, value in enumerate(lhs.flatten()):
+        host_mem[idx] = int(value) & 0xFF
+    for idx, value in enumerate(rhs.flatten()):
+        host_mem[0x1000 + idx] = int(value) & 0xFF
+
+    commands = [
+        make_descriptor(opcode=0x01, dst=0, m=2, n=2),
+        make_descriptor(opcode=0x01, dst=1, m=2, n=2),
+        make_descriptor(opcode=0x03, flags=0x40, dst=1, src=0, m=2, n=2, k=2),
+        make_descriptor(opcode=0x05, flags=0x80, dst=2, src=1, m=2, n=2),
+        make_descriptor(opcode=0x02, src=2, m=2, n=2),
+    ]
+
+    await mmio_write(dut, 0x38, 0x0000_0000)
+    await mmio_write(dut, 0x08, 0x0002_0000)
+    await mmio_write(dut, 0x0C, 4)
+
+    cocotb.start_soon(serve_queue_bus(dut, commands, timeout=6000))
+    cocotb.start_soon(serve_dma_bus(dut, host_mem, timeout=6000))
+
+    await mmio_write(dut, 0x00, 0x01)
+    await mmio_write(dut, 0x10, len(commands))
+
+    tail = 0
+    status = 0
+    for _ in range(4000):
+        await RisingEdge(dut.clk)
+        tail = await mmio_read(dut, 0x14)
+        status = await mmio_read(dut, 0x04)
+        if tail >= len(commands) and (status & 0x01) == 0:
+            break
+
+    assert tail >= len(commands), f"tail should reach {len(commands)}, got {tail}"
+    assert (status & 0x01) == 0, "core should be idle before checking stored output"
+
+    observed = np.array(
+        [
+            [host_mem.get(0x2000 + 0, 0), host_mem.get(0x2000 + 1, 0)],
+            [host_mem.get(0x2000 + 2, 0), host_mem.get(0x2000 + 3, 0)],
+        ],
+        dtype=np.uint8,
+    )
+    sb.record("weights", weights, observed, atol=0.0, rtol=0.0, min_cosine=1.0)
+    sb.assert_passed()
+
+
 # ── pytest entry point ──
 
 
@@ -300,6 +360,10 @@ def test_attn_core_runner():
         rtl_dir / "tile_scheduler.sv",
         rtl_dir / "dma_engine.sv",
         rtl_dir / "bank_arbiter.sv",
+        rtl_dir / "mac_lane.sv",
+        rtl_dir / "mac_array.sv",
+        rtl_dir / "compute_engine.sv",
+        rtl_dir / "scratchpad_bank_1rw.sv",
         rtl_dir / "scratchpad.sv",
         rtl_dir / "vector_unit.sv",
         rtl_dir / "perf_counters.sv",

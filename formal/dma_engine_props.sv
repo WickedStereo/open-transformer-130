@@ -1,7 +1,7 @@
 module dma_engine_props #(
-    parameter int NUM_BANKS   = 8,
-    parameter int BANK_ADDR_W = 14,
-    parameter int SLOT_BITS   = 5
+    parameter NUM_BANKS   = 8,
+    parameter BANK_ADDR_W = 14,
+    parameter SLOT_BITS   = 5
 ) (
     input logic                     clk,
     input logic                     rst_n,
@@ -12,46 +12,49 @@ module dma_engine_props #(
     input logic                     done,
     input logic                     error,
     input logic [NUM_BANKS-1:0]     scratch_req,
-    input logic [2:0]               state_dbg
+    input logic                     bus_req
 );
 
-    // P1: DMA never requests more than one bank simultaneously
-    property p_single_bank_req;
-        @(posedge clk) disable iff (!rst_n)
-            (scratch_req != '0) |-> $onehot(scratch_req);
-    endproperty
-    assert property (p_single_bank_req)
-        else $error("FORMAL: DMA requested multiple banks simultaneously");
+    logic f_past_valid;
+    logic accepted_cmd;
 
-    // P2: cmd_ready only asserted in IDLE state
-    property p_ready_only_idle;
-        @(posedge clk) disable iff (!rst_n)
-            cmd_ready |-> (state_dbg == 3'd0);
-    endproperty
+    initial begin
+        f_past_valid = 1'b0;
+        accepted_cmd = 1'b0;
+    end
 
-    // P3: done and error are mutually exclusive
-    property p_done_error_mutex;
-        @(posedge clk) disable iff (!rst_n)
-            !(done && error);
-    endproperty
-    assert property (p_done_error_mutex)
-        else $error("FORMAL: done and error asserted simultaneously");
+    always_ff @(posedge clk) begin
+        f_past_valid <= 1'b1;
 
-    // P4: done or error is one-cycle pulse (not held)
-    property p_done_pulse;
-        @(posedge clk) disable iff (!rst_n)
-            done |=> !done;
-    endproperty
-    assert property (p_done_pulse)
-        else $error("FORMAL: done held for more than one cycle");
+        if (!rst_n) begin
+            accepted_cmd <= 1'b0;
+        end else begin
+            if (cmd_valid && cmd_ready)
+                accepted_cmd <= 1'b1;
+            if (done || error)
+                accepted_cmd <= 1'b0;
 
-    // P5: Every accepted command eventually produces done or error
-    // (liveness -- requires bounded model checking depth)
-    property p_cmd_completes;
-        @(posedge clk) disable iff (!rst_n)
-            (cmd_valid && cmd_ready) |-> ##[1:1000] (done || error);
-    endproperty
-    // Liveness: cover rather than assert (unbounded proof not practical here)
-    cover property (p_cmd_completes);
+            if (scratch_req != '0)
+                assert ((scratch_req & (scratch_req - 1'b1)) == '0);
+
+            if (cmd_ready)
+                assert ((scratch_req == '0) && !bus_req);
+
+            assert (!(done && error));
+
+            if (f_past_valid && $past(done))
+                assert (!done);
+
+            if (f_past_valid && $past(cmd_valid && cmd_ready
+                                      && (cmd_byte_count == 13'd0 || cmd_byte_count > 13'd4096)))
+                assert (error);
+
+            if (accepted_cmd)
+                cover (done || error);
+        end
+    end
+
+    logic _unused;
+    assign _unused = &{1'b0, cmd_slot_id};
 
 endmodule

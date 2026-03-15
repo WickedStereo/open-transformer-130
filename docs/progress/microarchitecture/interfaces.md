@@ -16,7 +16,7 @@ flowchart TD
   QCtrl -->|"descriptor"| Dec["decoder"]
   Dec -->|"action"| Sched["tile_scheduler"]
   Sched -->|"dma_cmd"| DMA["dma_engine"]
-  Sched -->|"compute_cmd"| MAC["mac_array"]
+  Sched -->|"compute_cmd"| MAC["compute_engine"]
   Sched -->|"vector_cmd"| Vec["vector_unit"]
   DMA -->|"req/grant"| Arb["bank_arbiter"]
   MAC -->|"req/grant"| Arb
@@ -62,25 +62,27 @@ Consumer: dma_engine
 | `dma_done` | D->S | 1 | Transfer complete pulse |
 | `dma_error` | D->S | 1 | Fault pulse |
 
-## Interface 3: Scheduler -> MAC array
+## Interface 3: Scheduler -> Compute engine
 
 Owner: tile_scheduler
-Consumer: mac_array
+Consumer: compute_engine
 
 | Signal | Dir | Width | Description |
 | --- | --- | --- | --- |
 | `compute_cmd_valid` | S->M | 1 | Compute command issued |
-| `compute_cmd_ready` | M->S | 1 | MAC array can accept |
-| `compute_src_slot` | S->M | 5 | Source A tile slot (Q or weights) |
-| `compute_src2_slot` | S->M | 5 | Source B tile slot (K or V) |
+| `compute_cmd_ready` | M->S | 1 | Compute engine can accept |
+| `compute_src_slot` | S->M | 5 | Source A tile slot |
+| `compute_src2_slot` | S->M | 5 | Prefetched RHS tile slot |
 | `compute_dst_slot` | S->M | 5 | Destination tile slot |
 | `compute_dim_m` | S->M | 8 | Tile M dimension |
 | `compute_dim_n` | S->M | 8 | Tile N dimension |
 | `compute_dim_k` | S->M | 8 | Inner dimension |
-| `compute_accum` | S->M | 1 | Add to existing accumulator |
+| `compute_accum` | S->M | 1 | Reserved for future accumulation path |
 | `compute_saturate` | S->M | 1 | Saturate output to INT8 |
 | `compute_shift` | S->M | 4 | Right-shift amount |
 | `compute_done` | M->S | 1 | Tile complete pulse |
+
+Current integrated profile: the scheduler drives `compute_src2_slot` and `compute_dst_slot` from the same descriptor field. The compute engine prefetches the RHS tile before writing the output tile back in-place.
 
 ## Interface 4: Scheduler -> Vector unit
 
@@ -91,8 +93,8 @@ Consumer: vector_unit
 | --- | --- | --- | --- |
 | `vector_cmd_valid` | S->V | 1 | Vector command issued |
 | `vector_cmd_ready` | V->S | 1 | Vector unit can accept |
-| `vector_src_slot` | S->V | 5 | Source tile slot (INT32 scores) |
-| `vector_dst_slot` | S->V | 5 | Destination tile slot (INT8 weights) |
+| `vector_src_slot` | S->V | 5 | Source tile slot (INT8 score bytes) |
+| `vector_dst_slot` | S->V | 5 | Destination tile slot (INT8 normalized weights) |
 | `vector_rows` | S->V | 8 | Number of rows |
 | `vector_cols` | S->V | 8 | Number of columns per row |
 | `vector_approx` | S->V | 1 | Approximation mode |
@@ -149,8 +151,8 @@ Internal connections from mmio_regs to other blocks:
 | `queue_size_log2` | queue_ctrl | Ring depth |
 | `cmd_head` | queue_ctrl | Producer pointer |
 | `tile_default_m/n/k` | decoder | Default dimensions |
-| `dma_host_addr` | dma_engine | Direct-mode host address |
-| `scratch_base` | dma_engine | Direct-mode scratchpad base |
+| `dma_host_addr` | tile_scheduler / dma_engine | Base host address for queued DMA slot windows |
+| `scratch_base` | dma_engine | Reserved for future direct-mode transfers |
 
 | Input to MMIO | Source | Description |
 | --- | --- | --- |
@@ -158,7 +160,7 @@ Internal connections from mmio_regs to other blocks:
 | `status_busy` | tile_scheduler | Busy flag |
 | `status_fault` | decoder | Fault flag |
 | `status_dma_active` | dma_engine | DMA active flag |
-| `status_compute_active` | mac_array | Compute active flag |
+| `status_compute_active` | compute_engine | Compute active flag |
 | `status_queue_depth` | queue_ctrl | Queue occupancy |
 | `fault_info` | decoder | Fault cause + descriptor |
 | `perf_busy_cycles` | tile_scheduler | Counter value |

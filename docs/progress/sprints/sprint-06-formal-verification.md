@@ -1,15 +1,20 @@
 # Sprint 06 - Formal Verification
 
-Status: done
+Status: active
 
 ## Objective
 
-Introduce a formal verification flow that proves critical safety and liveness properties for the core control and memory blocks.
+Convert the repo's formal collateral from attached harnesses and local elaboration checks into solver-backed proof evidence for the most critical safety and bounded-progress properties.
+
+## Rebaseline Note
+
+This sprint is no longer about creating the formal skeleton. That exists. The remaining work is operational proof closure: real SMT solver availability, CI execution, proof result capture, and disciplined handling of any unproven properties or assumptions.
 
 ## Deliverables
 
-- SymbiYosys setup and reusable proof harness structure
+- SymbiYosys / `make formal` setup and reusable proof harness structure
 - property suites for DMA, decoder, accumulator policy, and scheduler
+- solver-backed proof runs and archived results
 - formal regression strategy and results report
 - triaged counterexample backlog for any unproven properties
 
@@ -29,6 +34,7 @@ Formal infrastructure and module-specific proof work can proceed in parallel acr
 - set up the SymbiYosys directory structure, scripts, and conventions
 - define common assumptions and helper modules
 - document how proofs will be run locally and in CI
+- standardize solver/tool versions so results are reproducible
 
 ### DMA and memory-properties lane
 
@@ -41,6 +47,7 @@ Formal infrastructure and module-specific proof work can proceed in parallel acr
 - prove deterministic invalid-opcode handling
 - target no-deadlock or progress properties for the scheduler
 - check queue-state invariants and reset behavior
+- keep bounded liveness properties explicit about the limits of the proof model
 
 ### Accumulator-properties lane
 
@@ -52,12 +59,15 @@ Formal infrastructure and module-specific proof work can proceed in parallel acr
 
 - summarize proofs, bounds, assumptions, and failures in a dated report
 - decide which proofs are gating versus informational
-- wire stable proofs into CI over time
+- wire stable proofs into CI as a required step
+- record solver/version information alongside proof results
 
 ## Exit Criteria
 
+- `make formal` runs end to end with a real SMT solver
 - critical safety properties are proven or bounded with documented assumptions
 - counterexamples are triaged into fixes, assumptions, or accepted limitations
+- CI records proof execution as evidence rather than only carrying placeholder setup
 - the team has a repeatable formal workflow rather than one-off experiments
 
 ## Evidence To Capture
@@ -65,8 +75,10 @@ Formal infrastructure and module-specific proof work can proceed in parallel acr
 - formal harnesses and property files
 - formal verification report
 - CI integration notes
+- proof logs or summarized result artifacts tied to a solver/tool version
 
 ## Open Risks And Decisions
 
 - overly aggressive assumptions can hide real bugs
 - late interface churn can invalidate proofs and waste effort
+- tool-version drift can make a "working" formal flow look healthy locally while failing in CI

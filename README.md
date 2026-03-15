@@ -1,6 +1,6 @@
 # open-transformer-130
 
-Starter repository for an open-silicon + accelerator project with containerized development, RTL simulation, cocotb testing, placeholder FPGA synthesis, and OpenLane 2 integration points.
+Open-hardware transformer accelerator prototype with an integrated RTL baseline, cocotb verification, Yosys-compatible synthesis entry points, and OpenLane 2 collateral for the current `attn_core` top.
 
 The devcontainer is currently optimized for simulation, cocotb, software tooling, and OpenLane. More ambitious FPGA toolchain pieces such as ECP5 support can be layered back in later once the core workflow is stable.
 
@@ -49,6 +49,7 @@ The devcontainer bind-mounts `$HOME/pdk` from the host into `/pdk`, so using `ex
 ```bash
 make doctor
 make lint
+make formal
 make sim
 make test
 make fpga ICE40_ARCH=up5k ICE40_PACKAGE=sg48
@@ -57,12 +58,13 @@ make gds PDK_ROOT=$PDK_ROOT
 
 `make doctor` is the Sprint 00 bootstrap check. It verifies the required lint/test toolchain, confirms the core Python packages are importable, and reports non-blocking gaps for optional later-sprint tooling such as OpenRAM, SymbiYosys, and Caravel-related infrastructure.
 
-`make fpga` is intentionally parameterized because the scaffold does not lock the project to a specific iCE40 part or package yet. The current container keeps only the lighter iCE40 FPGA tooling path enabled.
+`make fpga` is intentionally parameterized because the repo still does not lock to a single iCE40 board/package. The current flow now targets `attn_core` rather than the old stub top.
 
 `make gds` uses `python3 -m openlane --dockerized`, which pulls and runs the official `ghcr.io/efabless/openlane2` container instead of relying on the in-container Yosys/OpenROAD stack. The first run can take a while because it needs to pull that image. Inside the devcontainer, the Makefile automatically falls back to `sudo` if the mounted Docker socket is only root-accessible.
 
 ## Notes
 
-- `rtl/attention_stub.sv` is a placeholder module with the expected `clk` and `reset` signals.
-- `sim/reference_attention.py` provides a NumPy golden model for future attention datapath comparisons.
-- `sim/test_attention.py` demonstrates the cocotb reset/clock pattern and shows where to compare DUT outputs to the Python reference.
+- `rtl/attn_core.sv` is the integrated prototype top and the default `make sim` / `make fpga` target.
+- `rtl/attention_stub.sv` is retained only as a minimal placeholder module.
+- `rtl/scratchpad_bank_1rw.sv` is the current SRAM swap point for future OpenRAM-style macro integration.
+- `sim/reference_attention.py` provides the higher-level attention model, while `sim/rtl_scoreboard.py` mirrors the current fixed-point integrated datapath.

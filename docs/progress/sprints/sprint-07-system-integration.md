@@ -1,10 +1,14 @@
 # Sprint 07 - System Integration
 
-Status: done
+Status: done (baseline closure)
 
 ## Objective
 
-Assemble the major blocks into an integrated accelerator core with a working control plane, counters, and end-to-end directed regressions.
+Assemble the major blocks into an integrated accelerator core with a working control plane, counters, and end-to-end directed regressions for the first complete baseline flow.
+
+## Rebaseline Note
+
+This sprint is considered complete for baseline closure because the repo now demonstrates a real `LOAD_TILE -> MATMUL -> SOFTMAX -> STORE_TILE` sequence in `attn_core`. That is not the same as full attention-datapath closure. The next integration gate is broader execution coverage, not re-opening the existence of the integrated top itself.
 
 ## Deliverables
 
@@ -12,6 +16,7 @@ Assemble the major blocks into an integrated accelerator core with a working con
 - command queue and control/status register integration
 - performance-counter map and first integrated measurements
 - end-to-end simulation regressions against the golden model
+- documented backlog for follow-on full-attention integration work
 
 ## Dependencies
 
@@ -41,6 +46,7 @@ Top-level assembly, software-visible control work, integrated verification, and 
 - run directed end-to-end workloads through load, compute, softmax, and store sequences
 - compare outputs to the golden model
 - publish an integration report with known gaps and stress failures
+- explicitly separate "baseline integrated flow passes" from "full workload coverage still missing"
 
 ### Software-model lane
 
@@ -59,6 +65,7 @@ Top-level assembly, software-visible control work, integrated verification, and 
 - the integrated core executes at least one complete directed flow end to end
 - control/status semantics are stable enough for runtime and Caravel work to begin
 - first integrated performance counters and implementation observations are captured
+- remaining follow-on integration gaps are documented rather than hidden by a simplistic "done" label
 
 ## Evidence To Capture
 
@@ -70,3 +77,4 @@ Top-level assembly, software-visible control work, integrated verification, and 
 
 - top-level handshake mismatches may reveal hidden assumptions in block specs
 - system-level backpressure could expose new deadlock or starvation cases
+- a baseline score-path integration can create false confidence if not followed by fuller attention sequencing

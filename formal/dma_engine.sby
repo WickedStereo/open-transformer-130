@@ -14,8 +14,10 @@ smtbmc z3
 [script]
 read -sv ../rtl/dma_engine.sv
 read -sv dma_engine_props.sv
-prep -top dma_engine
+read -sv dma_engine_formal.sv
+prep -top dma_engine_formal
 
 [files]
 ../rtl/dma_engine.sv
 dma_engine_props.sv
+dma_engine_formal.sv

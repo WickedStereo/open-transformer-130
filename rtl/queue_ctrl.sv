@@ -22,13 +22,11 @@ module queue_ctrl (
     input  logic        bus_ack
 );
 
-    typedef enum logic [1:0] {
-        S_IDLE    = 2'd0,
-        S_FETCH   = 2'd1,
-        S_PRESENT = 2'd2
-    } state_t;
+    localparam S_IDLE    = 2'd0;
+    localparam S_FETCH   = 2'd1;
+    localparam S_PRESENT = 2'd2;
 
-    state_t state;
+    logic [1:0] state;
 
     // Queue depth mask for power-of-2 wrapping
     wire [7:0] depth_mask = (8'd1 << queue_size_log2) - 8'd1;

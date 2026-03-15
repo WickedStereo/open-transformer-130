@@ -141,7 +141,10 @@ def test_scratchpad_runner():
     runner = get_runner(os.getenv("SIM", "verilator"))
 
     runner.build(
-        sources=[repo_root / "rtl" / "scratchpad.sv"],
+        sources=[
+            repo_root / "rtl" / "scratchpad_bank_1rw.sv",
+            repo_root / "rtl" / "scratchpad.sv",
+        ],
         hdl_toplevel="scratchpad",
         build_dir=str(repo_root / "build" / "test_scratchpad"),
         always=True,
