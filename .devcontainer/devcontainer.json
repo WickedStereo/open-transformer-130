@@ -8,10 +8,14 @@
   "workspaceFolder": "/workspace",
   "remoteUser": "dev",
   "mounts": [
-    "source=${localEnv:HOME}/pdk,target=/pdk,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/pdk,target=/pdk,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind,consistency=cached",
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
   "containerEnv": {
-    "PDK_ROOT": "/pdk"
+    "PDK_ROOT": "/pdk",
+    "DOCKER_HOST": "unix:///var/run/docker.sock",
+    "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
   "customizations": {
     "vscode": {
@@ -22,5 +26,5 @@
       ]
     }
   },
-  "postCreateCommand": "python3 -m pip install --upgrade pip && python3 -m pip install openlane cocotb pyuvm numpy torch onnx matplotlib"
+  "postCreateCommand": "python3 -m pip install --user --upgrade pip && python3 -m pip install --user openlane cocotb pyuvm numpy torch onnx matplotlib"
 }

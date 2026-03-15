@@ -1,4 +1,5 @@
 build/
+openlane/runs/
 __pycache__/
 .pytest_cache/
 *.fst

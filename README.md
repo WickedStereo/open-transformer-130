@@ -35,6 +35,8 @@ The devcontainer bind-mounts `$HOME/pdk` from the host into `/pdk`, so using `ex
 2. Open the folder `/home/anton/open-transformer-130`.
 3. With the folder open, run `Dev Containers: Reopen in Container`.
 4. Wait for the image build and the `postCreateCommand` pip installs to finish.
+5. The devcontainer also bind-mounts the host Docker socket so `make gds` can launch OpenLane's official Dockerized flow from inside Cursor. Your host user must already be able to run `docker` without `sudo`.
+6. The repo is mounted both at `/workspace` and at its original host path so OpenLane's nested Docker flow can hand the host daemon real mount paths instead of container-only paths.
 
 ## Main commands
 
@@ -47,6 +49,8 @@ make gds PDK_ROOT=$PDK_ROOT
 ```
 
 `make fpga` is intentionally parameterized because the scaffold does not lock the project to a specific iCE40 part or package yet. The current container keeps only the lighter iCE40 FPGA tooling path enabled.
+
+`make gds` uses `python3 -m openlane --dockerized`, which pulls and runs the official `ghcr.io/efabless/openlane2` container instead of relying on the in-container Yosys/OpenROAD stack. The first run can take a while because it needs to pull that image. Inside the devcontainer, the Makefile automatically falls back to `sudo` if the mounted Docker socket is only root-accessible.
 
 ## Notes
 

@@ -1,6 +1,12 @@
 TOP ?= attention_stub
 PYTHON ?= python3
 VERILATOR ?= verilator
+OPENLANE ?= $(PYTHON) -m openlane
+OPENLANE_RUN_DIR ?= $(CURDIR)
+ifdef HOST_WORKSPACE
+OPENLANE_RUN_DIR := $(HOST_WORKSPACE)
+endif
+OPENLANE_CONFIG ?= $(OPENLANE_RUN_DIR)/openlane/config.json
 BUILD_DIR ?= build
 RTL_SRCS := $(wildcard rtl/*.sv)
 SIM_MAIN := sim/main.cpp
@@ -38,7 +44,19 @@ fpga:
 
 gds:
 	@if [ -z "$(PDK_ROOT)" ]; then echo "Set PDK_ROOT before running OpenLane."; exit 1; fi
-	openlane --pdk-root $(PDK_ROOT) openlane/config.json
+	@if docker info >/dev/null 2>&1; then \
+		cd "$(OPENLANE_RUN_DIR)" && $(OPENLANE) --docker-no-tty --dockerized --pdk-root "$(PDK_ROOT)" "$(OPENLANE_CONFIG)"; \
+	elif sudo docker info >/dev/null 2>&1; then \
+		sudo -E bash -lc 'cd "$(OPENLANE_RUN_DIR)" && $(OPENLANE) --docker-no-tty --dockerized --pdk-root "$(PDK_ROOT)" "$(OPENLANE_CONFIG)"'; \
+	else \
+		echo "Docker is not accessible from this shell."; \
+		exit 1; \
+	fi
 
 clean:
-	rm -rf $(BUILD_DIR) .pytest_cache sim/__pycache__ sim/*.fst sim/*.vcd sim/*.xml
+	@for path in "$(BUILD_DIR)" "openlane/runs" ".pytest_cache" "sim/__pycache__"; do \
+		if [ -e "$$path" ]; then \
+			rm -rf "$$path" 2>/dev/null || docker run --rm -v "$(CURDIR):/repo" busybox sh -c "rm -rf /repo/$$path"; \
+		fi; \
+	done
+	@rm -f sim/*.fst sim/*.vcd sim/*.xml

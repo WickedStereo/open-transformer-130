@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-dev \
     python3-pip \
+    python3-tk \
     sudo \
     tmux \
     vim \
@@ -46,7 +47,7 @@ RUN mkdir -p /tmp/verilator-src /opt/verilator \
  && make install \
  && rm -rf /tmp/verilator-src
 
-ENV PATH="/opt/verilator/bin:${PATH}"
+ENV PATH="/opt/verilator/bin:/home/dev/.local/bin:${PATH}"
 
 RUN python3 -m pip install --no-cache-dir --upgrade pip \
  && python3 -m pip install --no-cache-dir \
@@ -56,6 +57,14 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip \
     torch \
     onnx \
     matplotlib
+
+RUN apt-get update && apt-get install -y --no-install-recommends gh \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends docker.io \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --no-cache-dir openlane
 
 RUN useradd --create-home --shell /bin/bash dev \
  && usermod -aG sudo dev \
