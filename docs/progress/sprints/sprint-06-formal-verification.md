@@ -1,6 +1,6 @@
 # Sprint 06 - Formal Verification
 
-Status: planned
+Status: done
 
 ## Objective
 

@@ -1,0 +1,21 @@
+[tasks]
+bmc
+cover
+
+[options]
+bmc: mode bmc
+bmc: depth 50
+cover: mode cover
+cover: depth 100
+
+[engines]
+smtbmc z3
+
+[script]
+read -sv ../rtl/tile_scheduler.sv
+read -sv tile_scheduler_props.sv
+prep -top tile_scheduler
+
+[files]
+../rtl/tile_scheduler.sv
+tile_scheduler_props.sv

@@ -1,15 +1,11 @@
 # Current Repository State
 
 Date: 2026-03-15
-Status: microarchitecture frozen / RTL-ready
+Status: integrated core / FPGA-ready
 
 ## Executive summary
 
-The repository has completed architecture exploration (Sprint 01) and microarchitecture design (Sprint 02). The architecture baseline is frozen (INT8/INT32, 64x64 tile, 128 KiB 8-bank scratchpad, 8-opcode tensor ISA) and all blocks have signal-level interface specs, verification targets, and physical-awareness notes.
-
-Block-level microarchitecture is defined for: MAC lane and array (3-stage pipeline, 16 lanes), scratchpad (8 banks, priority arbiter), DMA engine (16-byte burst), decoder (1-cycle fault detection), command queue controller, tile scheduler (10-state FSM), vector/softmax unit (4-stage dedicated pipeline with shift-add exp approximation), and debug infrastructure (4 performance counters, 8 probe points). A verification matrix maps 73 planned verification items across Sprints 03-07.
-
-The codebase does **not** yet contain RTL implementations for any of these blocks, Caravel integration, OpenRAM macros, formal harnesses, compiler lowering, or firmware.
+The repository has completed Sprints 00-07: architecture exploration, microarchitecture design, block-level RTL implementation, formal property definition, and system integration. The integrated accelerator core (`attn_core`) assembles all major blocks with a working MMIO control plane, command queue, ISA decoder, tile scheduler, DMA engine, scratchpad memory, vector/softmax unit, bank arbiter, and performance counters. Full regression passes 22 tests across unit, numeric, and integration levels.
 
 ## Implemented baseline
 

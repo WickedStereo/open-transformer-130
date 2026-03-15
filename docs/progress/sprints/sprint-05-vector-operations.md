@@ -1,6 +1,6 @@
 # Sprint 05 - Vector Operations
 
-Status: planned
+Status: done
 
 ## Objective
 

@@ -1,0 +1,21 @@
+[tasks]
+bmc
+cover
+
+[options]
+bmc: mode bmc
+bmc: depth 20
+cover: mode cover
+cover: depth 30
+
+[engines]
+smtbmc z3
+
+[script]
+read -sv ../rtl/mac_lane.sv
+read -sv mac_lane_props.sv
+prep -top mac_lane
+
+[files]
+../rtl/mac_lane.sv
+mac_lane_props.sv
