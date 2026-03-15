@@ -4,10 +4,11 @@
     "dockerfile": "../docker/Dockerfile",
     "context": ".."
   },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
   "remoteUser": "dev",
   "mounts": [
-    "source=${localEnv:PDK_ROOT},target=/pdk,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/pdk,target=/pdk,type=bind,consistency=cached"
   ],
   "containerEnv": {
     "PDK_ROOT": "/pdk"

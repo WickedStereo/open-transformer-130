@@ -13,12 +13,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     flex \
     fpga-icestorm \
+    fpga-icestorm-chipdb \
     git \
+    help2man \
     iverilog \
     libfl-dev \
     lsb-release \
     make \
-    nextpnr-ecp5 \
     nextpnr-ice40 \
     perl \
     pkg-config \
