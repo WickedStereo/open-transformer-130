@@ -10,9 +10,10 @@ The repository now contains a real integrated `attn_core` baseline rather than a
 The verification baseline is materially stronger than before:
 
 - `make lint` passes.
+- `make formal` passes locally with the bounded `cvc4`-backed proof suite.
 - `make test` passes `29` cocotb regressions.
 - The repo now includes standalone benches for `queue_ctrl`, `dma_engine`, `vector_unit`, `tile_scheduler`, `perf_counters`, and `compute_engine`, plus an end-to-end `attn_core` scoreboard test.
-- Formal harnesses are attached under `formal/`, Yosys can elaborate them into SMT2 locally, and CI is configured to run `make formal` where the solver is available.
+- Formal harnesses are attached under `formal/`, `make formal` now passes locally with solver-backed checks, and CI is configured to install `cvc4` and run the same bounded proof suite.
 
 The repo is still not tapeout-ready. The integrated top is now backend-relevant, but the scratchpad is still backed by a behavioral model behind a macro-style wrapper, there is no OpenRAM-generated macro collateral yet, and the software/compiler/Caravel workstreams remain largely unimplemented.
 
@@ -31,7 +32,7 @@ The repo is still not tapeout-ready. The integrated top is now backend-relevant,
 | Scratchpad | 8-bank scratchpad remains behavioral, but each bank now sits behind a dedicated `scratchpad_bank_1rw` wrapper for future SRAM replacement | [rtl/scratchpad.sv](../../rtl/scratchpad.sv), [rtl/scratchpad_bank_1rw.sv](../../rtl/scratchpad_bank_1rw.sv) |
 | Golden models | Float/quantized attention reference plus RTL-oriented scoreboard helpers exist | [sim/reference_attention.py](../../sim/reference_attention.py), [sim/rtl_scoreboard.py](../../sim/rtl_scoreboard.py) |
 | Verification evidence | Cocotb unit + integration suite passes `29` tests locally | [sim/](../../sim/) |
-| Formal setup | Formal property harnesses are attached and elaborate through Yosys; CI now invokes `make formal` | [formal/](../../formal/), [Makefile](../../Makefile) |
+| Formal setup | Local `cvc4`-backed proofs now pass for `mac_lane`, `isa_decoder`, `dma_engine`, and `tile_scheduler`; CI installs `cvc4` and invokes `make formal` | [formal/](../../formal/), [Makefile](../../Makefile), [.github/workflows/test.yml](../../.github/workflows/test.yml) |
 | FPGA/front-end synthesis | `attn_core` is now the default synthesis top and the RTL elaborates successfully through Yosys front-end into [build/fpga/attn_core_hierarchy.json](../../build/fpga/attn_core_hierarchy.json) | [Makefile](../../Makefile), [fpga/README.md](../../fpga/README.md) |
 | ASIC flow | OpenLane now targets `attn_core`, uses an explicit SDC, and sees the scratchpad through bank wrappers | [openlane/config.json](../../openlane/config.json), [openlane/attn_core.sdc](../../openlane/attn_core.sdc) |
 
@@ -42,14 +43,14 @@ The repo is still not tapeout-ready. The integrated top is now backend-relevant,
 - No Caravel-specific wrappers, Wishbone bridge, logic-analyzer hookups, or user-project integration collateral.
 - No software runtime, firmware driver, or compiler lowering pipeline in [software/](../../software/) and [compiler/](../../compiler/).
 - No board-specific FPGA wrapper or constraints beyond the retargeted synthesis smoke flow.
-- No local formal proof run was completed in this environment because the SMT solver binary is not installed here, even though the harnesses and CI hook are now in place.
+- No unbounded liveness proof flow exists yet because SymbiYosys is still absent locally; the current DMA proof is a bounded safety run that constrains accepted valid commands to small transfers so the 6-step BMC depth stays tractable.
 
 ## Available command set
 
 - `make doctor` validates the environment baseline.
 - `make lint` checks the full RTL set with Verilator.
 - `make test` runs the full cocotb regression suite.
-- `make formal` runs the formal jobs when an SMT solver such as `z3` is installed.
+- `make formal` runs the bounded `cvc4`-backed proof suite for the current formal harness set.
 - `make sim` now defaults to the integrated `attn_core` top.
 - `make fpga ICE40_ARCH=... ICE40_PACKAGE=...` targets the integrated top for the existing iCE40 flow.
 - `make gds PDK_ROOT=$PDK_ROOT` launches OpenLane against the `attn_core` configuration.

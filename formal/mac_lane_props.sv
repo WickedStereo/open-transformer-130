@@ -25,8 +25,10 @@ module mac_lane_props #(
 
         if (!rst_n) begin
             idle_cycles <= '0;
-            assert (accum_out == '0);
         end else begin
+            if (f_past_valid && !$past(rst_n))
+                assert (accum_out == '0);
+
             assert ($signed(accum_out) >= -(2**(ACCUM_WIDTH-1)));
             assert ($signed(accum_out) <= (2**(ACCUM_WIDTH-1))-1);
 

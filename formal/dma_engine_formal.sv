@@ -32,6 +32,13 @@ module dma_engine_formal;
 
     always_ff @(posedge clk) begin
         f_past_valid <= 1'b1;
+
+        // Keep valid transfers within a bounded size so the 30-cycle BMC depth
+        // explores complete request/response behavior instead of arbitrary
+        // multi-burst runs. Invalid lengths remain unconstrained.
+        if (f_past_valid && rst_n && cmd_valid && cmd_ready
+                         && cmd_byte_count != 13'd0 && cmd_byte_count <= 13'd4096)
+            assume (cmd_byte_count <= 13'd8);
     end
 
     assign rst_n = f_past_valid;

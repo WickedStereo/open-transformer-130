@@ -42,11 +42,12 @@ module dma_engine_props #(
 
             assert (!(done && error));
 
-            if (f_past_valid && $past(done))
+            if (f_past_valid && $past(rst_n) && $past(done))
                 assert (!done);
 
-            if (f_past_valid && $past(cmd_valid && cmd_ready
-                                      && (cmd_byte_count == 13'd0 || cmd_byte_count > 13'd4096)))
+            if (f_past_valid && $past(rst_n)
+                              && $past(cmd_valid && cmd_ready
+                                       && (cmd_byte_count == 13'd0 || cmd_byte_count > 13'd4096)))
                 assert (error);
 
             if (accepted_cmd)

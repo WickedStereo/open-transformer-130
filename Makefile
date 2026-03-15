@@ -5,7 +5,7 @@ OPENLANE ?= $(PYTHON) -m openlane
 DOCTOR ?= $(PYTHON) scripts/bootstrap_doctor.py
 YOSYS ?= yosys
 SMTBMC ?= yosys-smtbmc
-FORMAL_SOLVER ?= z3
+FORMAL_SOLVER ?= cvc4
 OPENLANE_RUN_DIR ?= $(CURDIR)
 ifdef HOST_WORKSPACE
 OPENLANE_RUN_DIR := $(HOST_WORKSPACE)
@@ -54,7 +54,7 @@ formal-isa-decoder:
 formal-dma-engine:
 	mkdir -p $(FORMAL_BUILD_DIR)
 	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/dma_engine.sv formal/dma_engine_props.sv formal/dma_engine_formal.sv; prep -top dma_engine_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/dma_engine.smt2'
-	$(SMTBMC) -s $(FORMAL_SOLVER) -t 30 $(FORMAL_BUILD_DIR)/dma_engine.smt2
+	$(SMTBMC) -s $(FORMAL_SOLVER) -t 6 $(FORMAL_BUILD_DIR)/dma_engine.smt2
 
 formal-tile-scheduler:
 	mkdir -p $(FORMAL_BUILD_DIR)

@@ -20,6 +20,7 @@ jobs:
             bison \
             build-essential \
             ca-certificates \
+            cvc4 \
             flex \
             fpga-icestorm \
             fpga-icestorm-chipdb \

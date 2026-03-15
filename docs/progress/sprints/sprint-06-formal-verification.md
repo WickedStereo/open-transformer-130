@@ -8,7 +8,7 @@ Convert the repo's formal collateral from attached harnesses and local elaborati
 
 ## Rebaseline Note
 
-This sprint is no longer about creating the formal skeleton. That exists. The remaining work is operational proof closure: real SMT solver availability, CI execution, proof result capture, and disciplined handling of any unproven properties or assumptions.
+This sprint is no longer about creating the formal skeleton. That exists. Local solver-backed closure is now in place with `cvc4` and a bounded `make formal` flow. The remaining work is CI confirmation, report maintenance, and future expansion beyond the current bounded safety assumptions.
 
 ## Deliverables
 

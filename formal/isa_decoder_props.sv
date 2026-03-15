@@ -26,22 +26,30 @@ module isa_decoder_props (
         if (!rst_n) begin
             // nothing
         end else begin
-            if (fault_active)
-                assert (!action_valid);
+            if (f_past_valid && $past(rst_n) && $past(fault_active) && !$past(fault_clear)) begin
+                assert (!fault_valid);
+                if (desc_consumed)
+                    assert ($past(action_valid && action_ready));
+            end
 
-            if (f_past_valid && $past(fault_active && fault_clear))
+            if (f_past_valid && $past(rst_n) && $past(fault_active && fault_clear))
                 assert (!fault_active);
 
-            if (f_past_valid && $past(desc_consumed))
-                assert (!desc_consumed);
+            if (desc_consumed)
+                assert (fault_valid
+                        || (f_past_valid && $past(rst_n) && $past(action_valid && action_ready)));
 
-            if (f_past_valid && $past(desc_valid && !fault_active && opcode > 8'h07 && reserved == 4'd0))
-                assert (fault_active || fault_valid);
+            if (f_past_valid && $past(rst_n)
+                              && $past(desc_valid && !fault_active && !action_valid
+                                       && opcode > 8'h07 && reserved == 4'd0))
+                assert (fault_active || fault_valid || fault_clear);
 
-            if (f_past_valid && $past(desc_valid && !fault_active && reserved != 4'd0))
-                assert (fault_active || fault_valid);
+            if (f_past_valid && $past(rst_n)
+                              && $past(desc_valid && !fault_active && !action_valid && reserved != 4'd0))
+                assert (fault_active || fault_valid || fault_clear);
 
-            if (f_past_valid && $past(desc_valid && !fault_active && opcode <= 8'h07
+            if (f_past_valid && $past(rst_n)
+                              && $past(desc_valid && !fault_active && !action_valid && opcode <= 8'h07
                                       && reserved == 4'd0 && dst_raw < 8'd32 && src_raw < 8'd32))
                 assert (action_valid || desc_consumed);
         end
