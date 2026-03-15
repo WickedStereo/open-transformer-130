@@ -52,13 +52,16 @@ make lint
 make formal
 make sim
 make test
+make fpga-elab
 make fpga ICE40_ARCH=up5k ICE40_PACKAGE=sg48
 make gds PDK_ROOT=$PDK_ROOT
 ```
 
 `make doctor` is the Sprint 00 bootstrap check. It verifies the required lint/test toolchain, confirms the core Python packages are importable, and reports non-blocking gaps for optional later-sprint tooling such as OpenRAM, SymbiYosys, and Caravel-related infrastructure.
 
-`make fpga` is intentionally parameterized because the repo still does not lock to a single iCE40 board/package. The current flow now targets `attn_core` rather than the old stub top.
+`make fpga-elab` is the lightweight `08A` front-end smoke target. It checks the `attn_core` hierarchy in Yosys, reports a design inventory, and writes `build/fpga/attn_core_hierarchy.json` without requiring a concrete FPGA board choice.
+
+`make fpga` is intentionally parameterized because the repo still does not lock to a single iCE40 board/package. The current flow now targets `attn_core` rather than the old stub top, but it remains a heavier board/package smoke path than `make fpga-elab`.
 
 `make gds` uses `python3 -m openlane --dockerized`, which pulls and runs the official `ghcr.io/efabless/openlane2` container instead of relying on the in-container Yosys/OpenROAD stack. The first run can take a while because it needs to pull that image. Inside the devcontainer, the Makefile automatically falls back to `sudo` if the mounted Docker socket is only root-accessible.
 

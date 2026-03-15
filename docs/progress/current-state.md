@@ -33,7 +33,7 @@ The repo is still not tapeout-ready. The integrated top is now backend-relevant,
 | Golden models | Float/quantized attention reference plus RTL-oriented scoreboard helpers exist | [sim/reference_attention.py](../../sim/reference_attention.py), [sim/rtl_scoreboard.py](../../sim/rtl_scoreboard.py) |
 | Verification evidence | Cocotb unit + integration suite passes `29` tests locally | [sim/](../../sim/) |
 | Formal setup | Local `cvc4`-backed proofs now pass for `mac_lane`, `isa_decoder`, `dma_engine`, and `tile_scheduler`; CI installs `cvc4` and invokes `make formal` | [formal/](../../formal/), [Makefile](../../Makefile), [.github/workflows/test.yml](../../.github/workflows/test.yml) |
-| FPGA/front-end synthesis | `attn_core` is now the default synthesis top and the RTL elaborates successfully through Yosys front-end into [build/fpga/attn_core_hierarchy.json](../../build/fpga/attn_core_hierarchy.json) | [Makefile](../../Makefile), [fpga/README.md](../../fpga/README.md) |
+| FPGA/front-end synthesis | `attn_core` is now the default synthesis top, `make fpga-elab` reproduces the hierarchy smoke artifact, and a dated backend smoke report captures the current front-end inventory plus heavier-flow blockers | [Makefile](../../Makefile), [fpga/README.md](../../fpga/README.md), [2026-03-15 Backend Smoke](reports/2026-03-15-backend-smoke.md) |
 | ASIC flow | OpenLane now targets `attn_core`, uses an explicit SDC, and sees the scratchpad through bank wrappers | [openlane/config.json](../../openlane/config.json), [openlane/attn_core.sdc](../../openlane/attn_core.sdc) |
 
 ## What is still missing relative to the target program
@@ -52,6 +52,7 @@ The repo is still not tapeout-ready. The integrated top is now backend-relevant,
 - `make test` runs the full cocotb regression suite.
 - `make formal` runs the bounded `cvc4`-backed proof suite for the current formal harness set.
 - `make sim` now defaults to the integrated `attn_core` top.
+- `make fpga-elab` runs the lightweight Yosys hierarchy / inventory smoke flow for `attn_core`.
 - `make fpga ICE40_ARCH=... ICE40_PACKAGE=...` targets the integrated top for the existing iCE40 flow.
 - `make gds PDK_ROOT=$PDK_ROOT` launches OpenLane against the `attn_core` configuration.
 
@@ -70,3 +71,4 @@ The repo is still not tapeout-ready. The integrated top is now backend-relevant,
 - [2026-03-15 System Integration](reports/2026-03-15-system-integration.md)
 - [2026-03-15 Formal Verification](reports/2026-03-15-formal-verification.md)
 - [2026-03-15 ASIC De-risking Update](reports/2026-03-15-asic-de-risking-update.md)
+- [2026-03-15 Backend Smoke](reports/2026-03-15-backend-smoke.md)

@@ -19,7 +19,7 @@ FPGA_SRC ?= $(RTL_SRCS)
 ICE40_ARCH ?=
 ICE40_PACKAGE ?=
 
-.PHONY: doctor sim lint test formal formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler fpga gds clean
+.PHONY: doctor sim lint test formal formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler fpga-elab fpga gds clean
 
 doctor:
 	$(DOCTOR)
@@ -60,6 +60,11 @@ formal-tile-scheduler:
 	mkdir -p $(FORMAL_BUILD_DIR)
 	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/tile_scheduler.sv formal/tile_scheduler_props.sv formal/tile_scheduler_formal.sv; prep -top tile_scheduler_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/tile_scheduler.smt2'
 	$(SMTBMC) -s $(FORMAL_SOLVER) -t 30 $(FORMAL_BUILD_DIR)/tile_scheduler.smt2
+
+fpga-elab:
+	@if [ -z "$(FPGA_SRC)" ]; then echo "No FPGA sources configured."; exit 1; fi
+	mkdir -p $(BUILD_DIR)/fpga
+	$(YOSYS) -p 'read_verilog -sv $(FPGA_SRC); hierarchy -check -top $(TOP); stat -top $(TOP); write_json $(BUILD_DIR)/fpga/$(TOP)_hierarchy.json'
 
 fpga:
 	@if [ -z "$(ICE40_ARCH)" ] || [ -z "$(ICE40_PACKAGE)" ]; then \

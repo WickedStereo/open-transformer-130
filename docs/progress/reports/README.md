@@ -21,3 +21,4 @@ Existing reports:
 - [2026-03-15 Verification Plan](2026-03-15-verification-plan.md)
 - [2026-03-15 Verification Matrix](2026-03-15-verification-matrix.md)
 - [2026-03-15 ASIC De-risking Update](2026-03-15-asic-de-risking-update.md)
+- [2026-03-15 Backend Smoke](2026-03-15-backend-smoke.md)
