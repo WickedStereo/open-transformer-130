@@ -1,6 +1,6 @@
 # Sprint 03 - MAC Array RTL
 
-Status: planned
+Status: done
 
 ## Objective
 

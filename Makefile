@@ -30,7 +30,7 @@ $(BUILD_DIR)/sim/V$(TOP): $(RTL_SRCS) $(SIM_MAIN)
 
 lint:
 	@if [ -z "$(RTL_SRCS)" ]; then echo "No SystemVerilog sources found in rtl/"; exit 1; fi
-	$(VERILATOR) --lint-only --sv -Wall $(RTL_SRCS)
+	$(VERILATOR) --lint-only --sv -Wall -Wno-MULTITOP $(RTL_SRCS)
 
 test:
 	PYTHONPATH=$(CURDIR) $(PYTHON) -m pytest -q sim/

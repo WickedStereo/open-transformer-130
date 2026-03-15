@@ -1,6 +1,6 @@
 # Sprint 04 - Memory Subsystem RTL
 
-Status: planned
+Status: done
 
 ## Objective
 
