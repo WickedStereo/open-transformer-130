@@ -1,6 +1,6 @@
 # Sprint 01 - Architecture Exploration
 
-Status: planned
+Status: done
 
 ## Objective
 
@@ -54,11 +54,20 @@ Modeling, ISA design, and performance studies should run in parallel, with a sho
 - the ISA surface is stable enough for decoder and scheduler design
 - performance-model outputs exist for the chosen baseline
 
-## Evidence To Capture
+## Evidence Captured
 
-- architecture study report
-- updated architecture docs
-- decision records for frozen assumptions
+- [Architecture Study Report](../reports/2026-03-15-architecture-study.md)
+- [Verification Plan](../reports/2026-03-15-verification-plan.md)
+- [ADR-0002 Precision Policy](../decisions/ADR-0002-precision-policy.md)
+- [ADR-0003 Tile Shape](../decisions/ADR-0003-tile-shape.md)
+- [ADR-0004 Scratchpad Organization](../decisions/ADR-0004-scratchpad-organization.md)
+- [Frozen Tensor ISA](../architecture/tensor-isa.md)
+- [Updated System Architecture](../architecture/system-architecture.md)
+- [Updated Memory Hierarchy](../architecture/memory-hierarchy.md)
+- [Updated Performance Model](../architecture/performance-model.md)
+- [Expanded Golden Model](../../../sim/reference_attention.py)
+- [Performance Model Script](../../../sim/performance_model.py)
+- [Numeric Study Tests](../../../sim/test_numeric_study.py)
 
 ## Open Risks And Decisions
 

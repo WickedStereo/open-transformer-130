@@ -48,15 +48,22 @@ flowchart TD
 - The golden model remains the numerical source of truth for correctness.
 - Caravel integration should preserve the same logical programming model even if bus adapters change.
 
-## Near-term architecture outputs
+## Frozen baseline (Sprint 01)
 
-- finalize the baseline precision and accumulator policy
-- freeze the first tensor ISA surface
-- choose scratchpad organization and double-buffering assumptions
-- define the first performance model inputs and outputs
+The following parameters are frozen after architecture exploration:
 
-## Open questions
+| Parameter | Frozen value | Decision record |
+| --- | --- | --- |
+| Operand precision | INT8 | [ADR-0002](../decisions/ADR-0002-precision-policy.md) |
+| Accumulator width | INT32 | [ADR-0002](../decisions/ADR-0002-precision-policy.md) |
+| Tile shape | 64x64 | [ADR-0003](../decisions/ADR-0003-tile-shape.md) |
+| Scratchpad capacity | 128 KiB, 8 banks, 32 slots | [ADR-0004](../decisions/ADR-0004-scratchpad-organization.md) |
+| ISA surface | 8 opcodes, 64-bit descriptor | [Tensor ISA](tensor-isa.md) |
+| Control model | MMIO command queue | [Tensor ISA](tensor-isa.md) |
+| Target frequency | ~150 MHz on SKY130 | planning target, refined after synthesis |
 
-- How much softmax support should be hardwired versus sequenced through vector operations?
-- What tile shapes best balance scratchpad usage, bus pressure, and MAC utilization on SKY130?
-- Which command descriptor fields must be visible in hardware versus derived in software?
+## Open questions (carried to Sprint 02)
+
+- How much softmax support should be hardwired versus sequenced through vector micro-ops? (Determines vector unit complexity.)
+- What is the optimal MAC array width vs. routing on SKY130? (16 lanes is the planning target.)
+- What bank arbiter backpressure contract minimizes stall cycles?

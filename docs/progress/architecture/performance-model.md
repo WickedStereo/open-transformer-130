@@ -37,8 +37,22 @@ A first pass should estimate:
 - compare model predictions against FPGA traces after the prototype path is alive
 - compare model assumptions against OpenLane timing and area constraints before tapeout freeze
 
+## Sprint 01 results
+
+The performance model is implemented in [sim/performance_model.py](../../../sim/performance_model.py) and produces the following baseline outputs for the frozen 64x64 tile shape at 150 MHz with 16 MAC lanes:
+
+| Workload | Total cycles | MAC utilization | Effective GOPS | Latency |
+| --- | --- | --- | --- | --- |
+| seq=128, d=64 | 135,226 | 96.9% | 2.33 | 901 us |
+| seq=512, d=64 | 2,136,508 | 98.2% | 2.36 | 14,243 us |
+
+The design is **compute-bound** across all evaluated tile sizes. DMA overlap sensitivity analysis shows that going from 0% to 100% DMA-compute overlap improves utilization by only ~5%, confirming that the memory subsystem is adequately provisioned.
+
+These outputs serve as the reference baseline for comparison against RTL simulation results (Sprint 03+) and FPGA traces (Sprint 08).
+
 ## Deliverables
 
-- architecture study notebooks or scripts in `sim/` or `compiler/`
+- [sim/performance_model.py](../../../sim/performance_model.py): analytical model with sweep and sensitivity functions
+- [Architecture study report](../reports/2026-03-15-architecture-study.md): sweep data and decision rationale
 - parameter sweep reports in [../reports/](../reports/)
 - decision records when model results cause architecture changes
