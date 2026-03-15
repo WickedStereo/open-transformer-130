@@ -5,7 +5,10 @@ Sprints: 08A, 11A
 
 ## Summary
 
-The integrated `attn_core` top now has a repeatable front-end backend smoke path via `make fpga-elab`. In the current container shell, that flow completes successfully, emits `build/fpga/attn_core_hierarchy.json`, and produces a usable Yosys hierarchy/stat inventory for the top-level design.
+The integrated `attn_core` top now has two repeatable Docker-independent backend smoke paths in the current container shell:
+
+- `make fpga-elab` for the `08A` hierarchy/elaboration checkpoint
+- `make asic-prep` for a pre-OpenLane `11A` checkpoint based on Yosys `prep`
 
 The heavier backend entrypoints are not yet equally repeatable in this shell:
 
@@ -57,6 +60,37 @@ Observed result:
 - The run was still inside `yosys synth_ice40` mapping after several minutes and did not produce timely smoke evidence for this session
 - This is consistent with `attn_core` now being large enough that board/package PnR is a worse early checkpoint than pure hierarchy/elaboration
 
+### ASIC pre-OpenLane smoke
+
+Command:
+
+```bash
+make asic-prep
+```
+
+Observed result:
+
+- Pass
+- Output artifact: `build/asic/attn_core_prep.json`
+- Artifact size at capture time: about `3.3M`
+
+Top-level generic-cell summary from Yosys `prep`:
+
+- design hierarchy rooted at `attn_core`
+- `4,174` total cells after process lowering / generic mapping prep
+- `252` `$dff` cells
+- `776` `$eq` cells
+- `1,907` `$mux` cells
+- `13` `$mem` cells
+- `36` `$mul` cells
+
+Largest integrated blocks in the `prep` inventory:
+
+- `dma_engine`: `1,486` cells, dominated by `708` `$mux` and `439` `$pmux`
+- `compute_engine`: `780` cells, with `235` `$mux`, `188` `$pmux`, and `10` `$mul`
+- `vector_unit`: `538` cells, with `128` `$mux`, `185` `$pmux`, and `5` `$mul`
+- `scratchpad`: `8` bank-wrapper cells above the per-bank memories
+
 ## OpenLane environment check
 
 Environment facts observed in this shell:
@@ -83,11 +117,13 @@ Implication:
 ## Interpretation
 
 - `08A` now has a practical, fast, repeatable entrypoint that proves the integrated top elaborates and yields a concrete hierarchy artifact
+- `11A` now also has a Docker-independent `make asic-prep` checkpoint that lowers the design far enough to expose generic-cell pressure before a full OpenLane run
 - The repo should treat `make fpga-elab` as the first backend smoke gate, with full `make fpga` still considered heavier exploratory evidence
 - `11A` remains partially blocked by environment setup rather than RTL parse/elaboration issues
 
 ## Immediate next actions
 
 1. Keep `make fpga-elab` as the default front-end synthesis checkpoint for the integrated top.
-2. Restore Docker accessibility in the devcontainer shell so `make gds` can collect real OpenLane evidence.
-3. Revisit full iCE40 `make fpga` only after deciding whether a board-specific wrapper or a lighter synthesis-only FPGA metric is the intended `08A` gate.
+2. Keep `make asic-prep` as the default Docker-independent `11A` checkpoint until OpenLane is runnable in this shell.
+3. Restore Docker accessibility in the devcontainer shell so `make gds` can collect real OpenLane evidence.
+4. Revisit full iCE40 `make fpga` only after deciding whether a board-specific wrapper or a lighter synthesis-only FPGA metric is the intended `08A` gate.

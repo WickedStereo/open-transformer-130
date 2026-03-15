@@ -13,13 +13,14 @@ endif
 OPENLANE_CONFIG ?= $(OPENLANE_RUN_DIR)/openlane/config.json
 BUILD_DIR ?= build
 FORMAL_BUILD_DIR ?= $(BUILD_DIR)/formal
+ASIC_BUILD_DIR ?= $(BUILD_DIR)/asic
 RTL_SRCS := $(wildcard rtl/*.sv)
 SIM_MAIN := sim/main.cpp
 FPGA_SRC ?= $(RTL_SRCS)
 ICE40_ARCH ?=
 ICE40_PACKAGE ?=
 
-.PHONY: doctor sim lint test formal formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler fpga-elab fpga gds clean
+.PHONY: doctor sim lint test formal formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler asic-prep fpga-elab fpga gds clean
 
 doctor:
 	$(DOCTOR)
@@ -60,6 +61,11 @@ formal-tile-scheduler:
 	mkdir -p $(FORMAL_BUILD_DIR)
 	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/tile_scheduler.sv formal/tile_scheduler_props.sv formal/tile_scheduler_formal.sv; prep -top tile_scheduler_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/tile_scheduler.smt2'
 	$(SMTBMC) -s $(FORMAL_SOLVER) -t 30 $(FORMAL_BUILD_DIR)/tile_scheduler.smt2
+
+asic-prep:
+	@if [ -z "$(RTL_SRCS)" ]; then echo "No SystemVerilog sources found in rtl/"; exit 1; fi
+	mkdir -p $(ASIC_BUILD_DIR)
+	$(YOSYS) -p 'read_verilog -sv $(RTL_SRCS); prep -top $(TOP); stat -top $(TOP); write_json $(ASIC_BUILD_DIR)/$(TOP)_prep.json'
 
 fpga-elab:
 	@if [ -z "$(FPGA_SRC)" ]; then echo "No FPGA sources configured."; exit 1; fi

@@ -52,12 +52,15 @@ make lint
 make formal
 make sim
 make test
+make asic-prep
 make fpga-elab
 make fpga ICE40_ARCH=up5k ICE40_PACKAGE=sg48
 make gds PDK_ROOT=$PDK_ROOT
 ```
 
 `make doctor` is the Sprint 00 bootstrap check. It verifies the required lint/test toolchain, confirms the core Python packages are importable, and reports non-blocking gaps for optional later-sprint tooling such as OpenRAM, SymbiYosys, and Caravel-related infrastructure.
+
+`make asic-prep` is the lightweight pre-OpenLane `11A` smoke target. It lowers the integrated top through Yosys `prep`, emits `build/asic/attn_core_prep.json`, and prints a generic-cell inventory without requiring Docker or a full OpenLane run.
 
 `make fpga-elab` is the lightweight `08A` front-end smoke target. It checks the `attn_core` hierarchy in Yosys, reports a design inventory, and writes `build/fpga/attn_core_hierarchy.json` without requiring a concrete FPGA board choice.
 
