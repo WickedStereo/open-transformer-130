@@ -1,15 +1,15 @@
 # Current Repository State
 
 Date: 2026-03-15
-Status: architecture frozen / pre-RTL
+Status: microarchitecture frozen / RTL-ready
 
 ## Executive summary
 
-The repository has completed architecture exploration (Sprint 01). The first credible architecture baseline is frozen: INT8 operands with INT32 accumulation, 64x64 tile shape, 128 KiB 8-bank scratchpad, and an 8-opcode tensor ISA with MMIO command queue control.
+The repository has completed architecture exploration (Sprint 01) and microarchitecture design (Sprint 02). The architecture baseline is frozen (INT8/INT32, 64x64 tile, 128 KiB 8-bank scratchpad, 8-opcode tensor ISA) and all blocks have signal-level interface specs, verification targets, and physical-awareness notes.
 
-The expanded golden model supports tiled execution with online softmax, matching the planned hardware dataflow. An analytical performance model validates the chosen baseline at 96.9% MAC utilization. Numeric studies confirm the INT8 quantization error budget is acceptable (cosine > 0.90).
+Block-level microarchitecture is defined for: MAC lane and array (3-stage pipeline, 16 lanes), scratchpad (8 banks, priority arbiter), DMA engine (16-byte burst), decoder (1-cycle fault detection), command queue controller, tile scheduler (10-state FSM), vector/softmax unit (4-stage dedicated pipeline with shift-add exp approximation), and debug infrastructure (4 performance counters, 8 probe points). A verification matrix maps 73 planned verification items across Sprints 03-07.
 
-The codebase does **not** yet contain the planned tiled attention datapath RTL, Caravel wrapper, Wishbone integration, OpenRAM-generated scratchpad macros, formal harnesses, compiler lowering flow, or firmware/runtime stack described in the long-term roadmap.
+The codebase does **not** yet contain RTL implementations for any of these blocks, Caravel integration, OpenRAM macros, formal harnesses, compiler lowering, or firmware.
 
 ## Implemented baseline
 
@@ -25,7 +25,10 @@ The codebase does **not** yet contain the planned tiled attention datapath RTL, 
 | Performance model | Analytical: tile sweeps, DMA overlap sensitivity, scratchpad feasibility | [sim/performance_model.py](../../sim/performance_model.py) |
 | Numeric study | Automated: 15 tests covering quantized accuracy, tiled agreement, and edge cases | [sim/test_numeric_study.py](../../sim/test_numeric_study.py) |
 | Architecture | Frozen baseline: INT8/INT32, 64x64 tile, 128 KiB scratchpad, 8-opcode ISA | [architecture/](architecture/), [decisions/](decisions/) |
+| Microarchitecture | All blocks spec'd: compute, memory, control, vector/softmax, debug, interfaces | [microarchitecture/](microarchitecture/) |
 | Verification plan | Comparison hierarchy, scoreboard structure, test vectors, formal targets defined | [reports/2026-03-15-verification-plan.md](reports/2026-03-15-verification-plan.md) |
+| Verification matrix | 73 items across 10 blocks mapped to Sprints 03-07 | [reports/2026-03-15-verification-matrix.md](reports/2026-03-15-verification-matrix.md) |
+| Physical awareness | Area estimates, clock/reset conventions, SKY130 technology notes | [microarchitecture/physical-awareness.md](microarchitecture/physical-awareness.md) |
 | Simulation | C++ Verilator smoke path and cocotb test skeleton exist | [sim/main.cpp](../../sim/main.cpp), [sim/test_attention.py](../../sim/test_attention.py) |
 | FPGA | Placeholder README only; no board-specific wrapper or constraints checked in | [fpga/README.md](../../fpga/README.md) |
 | ASIC flow | OpenLane smoke configuration for the stub module exists | [openlane/config.json](../../openlane/config.json) |
@@ -53,11 +56,11 @@ The codebase does **not** yet contain the planned tiled attention datapath RTL, 
 
 ## Implications for planning
 
-- Sprint 02 (microarchitecture) can now proceed with frozen architecture parameters.
-- RTL implementation in Sprints 03-05 has clear golden-model checkpoints and numeric thresholds.
-- The verification plan defines scoreboard structure and test vectors for each RTL block.
+- Sprints 03-05 (MAC RTL, memory RTL, vector RTL) can proceed in parallel with frozen interfaces.
+- Each block has signal-level interface tables, verification targets, and golden-model checkpoints.
+- The verification matrix provides a concrete test plan: 54 unit tests, 16 formal properties, 3 integration tests.
+- Physical-awareness notes identify MAC lane count and scratchpad capacity as the parameters most likely to change after synthesis.
 - Caravel integration must be planned as a new workstream, because the repository does not yet contain a Caravel subtree.
-- The performance model provides baseline utilization and latency targets for RTL to match.
 
 ## Reference reports
 
@@ -65,3 +68,4 @@ The codebase does **not** yet contain the planned tiled attention datapath RTL, 
 - [2026-03-15 Sprint 00 Bootstrap](reports/2026-03-15-sprint-00-bootstrap.md) (Sprint 00)
 - [2026-03-15 Architecture Study](reports/2026-03-15-architecture-study.md) (Sprint 01)
 - [2026-03-15 Verification Plan](reports/2026-03-15-verification-plan.md) (Sprint 01)
+- [2026-03-15 Verification Matrix](reports/2026-03-15-verification-matrix.md) (Sprint 02)

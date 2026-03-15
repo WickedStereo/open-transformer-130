@@ -1,6 +1,6 @@
 # Sprint 02 - Microarchitecture Design
 
-Status: planned
+Status: done
 
 ## Objective
 
@@ -60,11 +60,16 @@ Compute, memory, and control subteams can work in parallel once the Sprint 1 arc
 - no major ownership ambiguity remains between compute, memory, and control blocks
 - verification expectations are attached to each upcoming RTL sprint
 
-## Evidence To Capture
+## Evidence Captured
 
-- microarchitecture docs
-- interface tables and block diagrams
-- verification planning notes or matrix
+- [Compute Datapath Spec](../microarchitecture/compute-datapath.md)
+- [Memory Subsystem Spec](../microarchitecture/memory-subsystem.md)
+- [Control Plane Spec](../microarchitecture/control-plane.md)
+- [Vector/Softmax Spec](../microarchitecture/vector-softmax.md)
+- [Debug and Observability Spec](../microarchitecture/debug-and-observability.md)
+- [Block Interface Definitions](../microarchitecture/interfaces.md)
+- [Physical Awareness Notes](../microarchitecture/physical-awareness.md)
+- [Verification Matrix](../reports/2026-03-15-verification-matrix.md)
 
 ## Open Risks And Decisions
 

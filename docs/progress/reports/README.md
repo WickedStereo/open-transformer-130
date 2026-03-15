@@ -17,3 +17,4 @@ Existing reports:
 - [2026-03-15 Sprint 00 Bootstrap](2026-03-15-sprint-00-bootstrap.md)
 - [2026-03-15 Architecture Study](2026-03-15-architecture-study.md)
 - [2026-03-15 Verification Plan](2026-03-15-verification-plan.md)
+- [2026-03-15 Verification Matrix](2026-03-15-verification-matrix.md)
