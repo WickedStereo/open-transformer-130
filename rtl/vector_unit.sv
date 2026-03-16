@@ -38,6 +38,9 @@ module vector_unit #(
     localparam ST_WRITE_OUT = 3'd5;
     localparam ST_ROW_DONE  = 3'd6;
     localparam ST_TILE_DONE = 3'd7;
+    localparam integer LOCAL_ADDR_W = 17;
+    localparam integer BANK_BITS = (NUM_BANKS > 1) ? $clog2(NUM_BANKS) : 1;
+    localparam integer SLOT_ADDR_W = BANK_ADDR_W + BANK_BITS - SLOT_BITS;
 
     logic [2:0] state;
 
@@ -45,7 +48,7 @@ module vector_unit #(
     logic [7:0]           num_rows_r, num_cols_r;
     logic                 approx_r;
     logic [7:0]           row_idx, col_idx;
-    logic [2:0]           read_bank_r;
+    logic [BANK_BITS-1:0] read_bank_r;
     logic signed [8:0]    row_max;
     logic [31:0]          row_sum;
     logic [15:0]          exp_buf [0:MAX_COLS-1];
@@ -54,9 +57,17 @@ module vector_unit #(
     logic [15:0]          exp_value_w;
     integer               exp_init_idx;
 
-    logic [16:0] src_base, dst_base, cur_addr;
-    assign src_base = {src_slot_r, 12'b0};
-    assign dst_base = {dst_slot_r, 12'b0};
+    logic [LOCAL_ADDR_W-1:0] src_base, dst_base, cur_addr;
+    assign src_base = {
+        {(LOCAL_ADDR_W - SLOT_BITS - SLOT_ADDR_W){1'b0}},
+        src_slot_r,
+        {SLOT_ADDR_W{1'b0}}
+    };
+    assign dst_base = {
+        {(LOCAL_ADDR_W - SLOT_BITS - SLOT_ADDR_W){1'b0}},
+        dst_slot_r,
+        {SLOT_ADDR_W{1'b0}}
+    };
 
     always_comb begin
         if (state == ST_WRITE_OUT)
@@ -65,7 +76,7 @@ module vector_unit #(
             cur_addr = src_base + ({9'b0, row_idx} * {9'b0, num_cols_r}) + {9'b0, col_idx};
     end
 
-    wire [2:0]             cur_bank   = cur_addr[16:14];
+    wire [BANK_BITS-1:0]   cur_bank   = cur_addr[BANK_ADDR_W + BANK_BITS - 1 -: BANK_BITS];
     wire [BANK_ADDR_W-1:0] cur_offset = cur_addr[BANK_ADDR_W-1:0];
     assign read_score = signed_byte(scratch_rdata[read_bank_r*DATA_W +: DATA_W]);
     assign shifted_score = read_score - row_max;

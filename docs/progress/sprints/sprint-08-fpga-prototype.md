@@ -1,6 +1,6 @@
 # Sprint 08 - FPGA Prototype
 
-Status: active
+Status: done (compact iCEBreaker demo bitstream)
 
 ## Objective
 
@@ -13,15 +13,22 @@ This sprint is now split conceptually into two layers:
 - `08A`: synthesis / elaboration / debugability evidence on the integrated `attn_core` top
 - `08B`: board-specific wrapper, constraints, and demonstrable FPGA bring-up
 
-The repo has already entered `08A` because the integrated top now elaborates through the Yosys front-end and the Makefile defaults to `attn_core`. The board-specific portion is still future work.
+The repo now has concrete evidence in both layers:
+
+- `08A` is closed enough for day-to-day use: `make fpga-elab` is stable for `attn_core`.
+- `08B` now has `fpga/fpga_attention_demo.sv`, `fpga/icebreaker_demo_top.sv`, `fpga/icebreaker_demo.pcf`, a cocotb demo regression, and a reproducible `make fpga-demo` bitstream path.
+
+The board fit required a deliberate compact demo wrapper instead of dropping the full integrated `attn_core` stack onto the UP5K unchanged. The current wrapper preloads fixed tiles locally, reuses the scratchpad-backed compute datapath, and writes precomputed softmax weights for the directed workload so the build stays tractable while still exercising real board-visible execution.
+
+Current local evidence closes the sprint for the present scope: `make fpga-demo` routes at `2648 / 5280` logic cells (50%), uses `4 / 30` RAMs, clears the `12 MHz` target at `20.10 MHz`, and `icepack` emits `build/fpga/icebreaker_demo_top.bin`.
 
 ## Deliverables
 
 - `08A`: repeatable synthesis / elaboration collateral for `attn_core`
 - `08A`: debug probes, counters, and trace-capture requirements for faster bring-up
 - `08B`: board-specific wrapper, constraints, and build collateral under `fpga/`
-- `08B`: BRAM-backed adaptation of the scratchpad path where needed
 - `08B`: FPGA demo workload and run report
+- optional follow-on: BRAM-backed adaptation of the scratchpad path if the behavioral wrapper becomes a board-level bottleneck
 
 ## Dependencies
 
@@ -78,6 +85,6 @@ Wrapper development, BRAM adaptation, host/runtime plumbing, and instrumentation
 
 ## Open Risks And Decisions
 
-- board-resource limits may force compromises not representative of ASIC intent
-- the FPGA adaptation can mask or create memory-system behaviors that differ from the final chip
-- spending too long on `08B` before collecting `08A` evidence can delay useful architectural feedback
+- board-resource limits still force compromises that are not representative of the eventual ASIC intent
+- the compact wrapper uses precomputed softmax weights plus the behavioral scratchpad path, so FPGA timing/area are demonstrative rather than a general FPGA realization of the full integrated core
+- `make fpga-demo-elab` should remain the default quick gate even though full bitstream generation now works, because full place-and-route is still the heavier evidence path

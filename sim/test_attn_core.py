@@ -12,6 +12,7 @@ import numpy as np
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
 
+from compiler.lowering import lower_attention_tile
 from sim.rtl_scoreboard import Scoreboard, descriptor, matmul_tile, softmax_fixed
 
 try:
@@ -342,6 +343,68 @@ async def test_end_to_end_matmul_softmax_store(dut):
         dtype=np.uint8,
     )
     sb.record("weights", weights, observed, atol=0.0, rtol=0.0, min_cosine=1.0)
+    sb.assert_passed()
+
+
+@cocotb.test()
+async def test_end_to_end_attention_qkv_store(dut):
+    """Run Q/K/V attention tile end to end against the lowering/runtime model."""
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    await reset(dut)
+
+    query = np.array([[1, 0], [0, 1]], dtype=np.int8)
+    key_t = np.array([[1, 0], [0, 1]], dtype=np.int8)
+    value = np.array([[10, 20], [30, 40]], dtype=np.int8)
+    lowered = lower_attention_tile(query, key_t, value)
+
+    sb = Scoreboard()
+    sb.input_stimulus["query"] = query
+    sb.input_stimulus["key_t"] = key_t
+    sb.input_stimulus["value"] = value
+    sb.golden_outputs["scores"] = lowered.golden_scores
+    sb.golden_outputs["weights"] = lowered.golden_weights
+    sb.golden_outputs["attention_out"] = lowered.golden_output
+
+    host_mem = lowered.program.build_memory_image().to_byte_dict()
+    commands = lowered.program.descriptor_words()
+
+    await mmio_write(dut, 0x38, lowered.program.dma_host_addr)
+    await mmio_write(dut, 0x08, lowered.program.queue_base)
+    await mmio_write(dut, 0x0C, lowered.program.queue_size_log2)
+
+    cocotb.start_soon(serve_queue_bus(dut, commands, timeout=8000))
+    cocotb.start_soon(serve_dma_bus(dut, host_mem, timeout=8000))
+
+    await mmio_write(dut, 0x00, 0x01)
+    await mmio_write(dut, 0x10, len(commands))
+
+    tail = 0
+    status = 0
+    for _ in range(6000):
+        await RisingEdge(dut.clk)
+        tail = await mmio_read(dut, 0x14)
+        status = await mmio_read(dut, 0x04)
+        if tail >= len(commands) and (status & 0x01) == 0:
+            break
+
+    assert tail >= len(commands), f"tail should reach {len(commands)}, got {tail}"
+    assert (status & 0x01) == 0, "core should be idle before checking stored output"
+
+    result_slot, result_len = lowered.program.result_slots["attention_out"]
+    result_base = lowered.program.dma_host_addr + result_slot * 4096
+    observed = np.fromiter(
+        (host_mem.get(result_base + offset, 0) for offset in range(result_len)),
+        dtype=np.uint8,
+        count=result_len,
+    ).reshape(lowered.golden_output.shape).view(np.int8)
+    sb.record(
+        "attention_out",
+        lowered.golden_output,
+        observed,
+        atol=0.0,
+        rtol=0.0,
+        min_cosine=0.999999,
+    )
     sb.assert_passed()
 
 

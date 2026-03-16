@@ -1,0 +1,15 @@
+# iCEBreaker v1.0e constraints for the integrated attention demo top.
+#
+# Pin assignments follow the public icestorm iCEBreaker example constraints:
+# - CLK 12 MHz: pin 35
+# - BTN_N: pin 10
+# - Snap-off LED bank on PMOD2: pins 27, 25, 21, 23, 26
+
+set_io clk_12mhz 35
+set_io btn_n 10
+
+set_io leds[0] 27
+set_io leds[1] 25
+set_io leds[2] 21
+set_io leds[3] 23
+set_io leds[4] 26

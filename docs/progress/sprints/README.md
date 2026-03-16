@@ -8,47 +8,42 @@ All sprint documents below are written to enable parallel execution across archi
 | 01 | Architecture Exploration | done | [Sprint 01 - Architecture Exploration](sprint-01-architecture-exploration.md) |
 | 02 | Microarchitecture Design | done | [Sprint 02 - Microarchitecture Design](sprint-02-microarchitecture.md) |
 | 03 | MAC Array RTL | done | [Sprint 03 - MAC Array RTL](sprint-03-mac-array-rtl.md) |
-| 04 | Memory Subsystem RTL | active | [Sprint 04 - Memory Subsystem RTL](sprint-04-memory-subsystem-rtl.md) |
+| 04 | Memory Subsystem RTL | skipped for current non-ASIC scope | [Sprint 04 - Memory Subsystem RTL](sprint-04-memory-subsystem-rtl.md) |
 | 05 | Vector Operations | done | [Sprint 05 - Vector Operations](sprint-05-vector-operations.md) |
-| 06 | Formal Verification | active | [Sprint 06 - Formal Verification](sprint-06-formal-verification.md) |
-| 07 | System Integration | done (baseline closure) | [Sprint 07 - System Integration](sprint-07-system-integration.md) |
-| 08 | FPGA Prototype | active | [Sprint 08 - FPGA Prototype](sprint-08-fpga-prototype.md) |
-| 09 | Compiler and Runtime | planned (thin-runtime first) | [Sprint 09 - Compiler and Runtime](sprint-09-compiler-runtime.md) |
-| 10 | Caravel Integration | planned | [Sprint 10 - Caravel Integration](sprint-10-caravel-integration.md) |
-| 11 | Physical Design | active | [Sprint 11 - Physical Design](sprint-11-physical-design.md) |
-| 12 | Tapeout Preparation | planned | [Sprint 12 - Tapeout Preparation](sprint-12-tapeout-preparation.md) |
-| 13 | Post-Silicon Validation | planned | [Sprint 13 - Post-Silicon Validation](sprint-13-post-silicon.md) |
+| 06 | Formal Verification | done (bounded `cvc4` suite green) | [Sprint 06 - Formal Verification](sprint-06-formal-verification.md) |
+| 07 | System Integration | done (full single-tile Q/K/V path) | [Sprint 07 - System Integration](sprint-07-system-integration.md) |
+| 08 | FPGA Prototype | done (compact iCEBreaker demo bitstream) | [Sprint 08 - FPGA Prototype](sprint-08-fpga-prototype.md) |
+| 09 | Compiler and Runtime | done (runtime + lowering baseline) | [Sprint 09 - Compiler and Runtime](sprint-09-compiler-runtime.md) |
+| 10 | Caravel Integration | skipped for current non-ASIC scope | [Sprint 10 - Caravel Integration](sprint-10-caravel-integration.md) |
+| 11 | Physical Design | skipped for current non-ASIC scope | [Sprint 11 - Physical Design](sprint-11-physical-design.md) |
+| 12 | Tapeout Preparation | skipped for current non-ASIC scope | [Sprint 12 - Tapeout Preparation](sprint-12-tapeout-preparation.md) |
+| 13 | Post-Silicon Validation | skipped for current non-ASIC scope | [Sprint 13 - Post-Silicon Validation](sprint-13-post-silicon.md) |
 
 ## Rebaseline Notes
 
-The numbering is intentionally preserved. What changed after the de-risking work is the interpretation of the active sprints and the evidence required to exit them.
+The numbering is intentionally preserved. What changed after the de-risking work and the current non-ASIC close-out request is the interpretation of which sprints are in scope and the evidence required to exit them.
 
-- `Sprint 04` stays active until the memory subsystem has a credible SRAM macro integration path, not just corrected behavioral RTL.
-- `Sprint 06` stays active until solver-backed formal runs complete in CI. Harness attachment alone is not enough.
-- `Sprint 07` is considered complete for baseline integration because the repo now demonstrates `LOAD_TILE -> MATMUL -> SOFTMAX -> STORE_TILE`, but it is not the same as full attention datapath closure.
-- `Sprint 08` should be read as two layers: `08A` synthesis / FPGA smoke and debugability, then `08B` board-specific wrapper and bring-up.
-- `Sprint 09` should begin with a minimal command generator / runtime path before any broader compiler ambition.
-- `Sprint 11` is also two layers: `11A` backend evidence on `attn_core` now, then `11B` full physical closure once the integration target is more stable.
+- `Sprint 04` and `Sprint 10` through `Sprint 13` are intentionally out of scope for this phase because they are ASIC-implementation or post-silicon lanes.
+- `Sprint 06` is closed for the current scope: `make formal` is green with bounded `cvc4` proofs, and the scheduler report now reflects the reduced harness assumptions used for closure.
+- `Sprint 07` is complete for the current non-ASIC target because the repo now demonstrates the full single-tile `Q -> K^T -> score -> softmax -> V -> output store` path.
+- `Sprint 08` still has two layers conceptually: `08A` fast synthesis / elaboration evidence and `08B` board-specific bring-up. Both are now closed for the current scope via the compact iCEBreaker demo path and reproducible bitstream generation.
+- `Sprint 09` is now beyond the original "thin-runtime first" gate: runtime helpers, descriptor serialization, attention lowering, and ONNX pattern extraction all exist, with future work limited to wider model coverage.
 
 ## Near-Term Execution Order
 
-For the current integrated prototype, the highest-value order is:
+For the current integrated prototype and current user scope, the highest-value order is:
 
-1. Close `Sprint 06` with real solver-backed formal results.
-2. Advance `Sprint 11A` and `Sprint 08A` by collecting synthesis/OpenLane evidence on `attn_core`.
-3. Finish the remaining `Sprint 04` memory realism work around SRAM macro integration.
-4. Extend `Sprint 07` behaviorally toward a fuller attention sequence.
-5. Start `Sprint 09A` with a thin software/runtime bring-up layer.
-6. Hold `Sprint 10` until the core is more physically credible.
+1. Extend `Sprint 09` from the current working baseline toward broader model coverage.
+2. Keep the `Sprint 06` and `Sprint 08` evidence green as the RTL evolves.
+3. Keep ASIC-only sprints deferred until the non-ASIC baseline changes scope again.
 
 ## Evidence Gates
 
 Use these gates instead of treating sprint completion as "code exists":
 
-- `Sprint 04` exit: scratchpad wrapper boundary plus a defined macro replacement path and backend-relevant memory collateral.
 - `Sprint 06` exit: `make formal` passes with a real SMT solver and CI records proof results.
-- `Sprint 07` next gate: integrated execution extends beyond score generation into a fuller attention command sequence.
-- `Sprint 08A` exit: synthesis/elaboration evidence and debug hooks are reproducible.
-- `Sprint 11A` exit: first meaningful area/timing/congestion evidence exists for `attn_core`.
+- `Sprint 07` exit: integrated execution covers the current single-tile Q/K/V attention fragment end to end.
+- `Sprint 08` exit: `make fpga-demo-elab` stays reproducible and the board-specific bitstream/demo flow is no longer blocked by wrapper/tooling issues.
+- `Sprint 09` exit: software can emit, stage, and validate the current integrated workload without handwritten descriptor assembly.
 
 Use [../templates/sprint-template.md](../templates/sprint-template.md) for future additions or replacements once the template is populated.

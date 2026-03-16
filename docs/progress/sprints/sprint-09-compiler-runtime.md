@@ -1,6 +1,6 @@
 # Sprint 09 - Compiler and Runtime
 
-Status: planned
+Status: done (runtime + lowering baseline)
 
 ## Objective
 
@@ -8,13 +8,13 @@ Create the software stack that lowers supported model fragments into accelerator
 
 ## Rebaseline Note
 
-This sprint should start with a thin-runtime path, not with a full compiler stack. The current hardware baseline is still evolving, so the immediate software need is a minimal command generator and host-side execution path that can reliably drive the integrated core. Broader graph lowering should follow only after that path is stable.
+This sprint started with the thin-runtime path and now has a working baseline implementation. The repository includes a host-side runtime for MMIO / queue programming, descriptor serialization, staged host-memory images, attention lowering helpers, and ONNX subgraph extraction for the currently supported `MatMul -> Softmax -> MatMul` pattern. Broader compiler ambition remains future work, but the first software-visible execution path is no longer missing.
 
 ## Deliverables
 
 - `09A`: command-buffer builder / descriptor serializer for the current ISA profile
 - `09A`: minimal host-side runtime helpers for queue programming, execution, and result collection
-- `09A`: runtime API notes and directed examples tied to the integrated core
+- `09A`: runtime API notes captured in `software/runtime.py`
 - `09B`: `compiler/lowering.py`
 - `09B`: `compiler/onnx_to_tile.py`
 - lowering tests against the golden model and accelerator command semantics
@@ -74,6 +74,6 @@ Graph lowering, command emission, runtime work, and verification can advance tog
 
 ## Open Risks And Decisions
 
-- ISA details may still drift if control-plane integration remains unstable
-- graph lowering may reveal missing hardware operations or inconvenient command granularity
-- the current in-place `MATMUL` contract may be awkward for software and may need an explicit migration plan later
+- graph lowering currently targets only the repo's supported single-tile attention fragment and rank-2 ONNX tensors
+- future software work will likely need a broader buffer/tensor model once multi-tile scheduling exists
+- the current in-place `MATMUL` contract may still prove awkward for wider software adoption and may need an explicit migration plan later

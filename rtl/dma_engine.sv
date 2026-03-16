@@ -44,12 +44,15 @@ module dma_engine #(
     localparam S_SCRATCH_WRITE = 3'd4;
     localparam S_DONE          = 3'd5;
     localparam S_ERROR         = 3'd6;
+    localparam integer LOCAL_ADDR_W = 17;
+    localparam integer BANK_BITS = (NUM_BANKS > 1) ? $clog2(NUM_BANKS) : 1;
+    localparam integer SLOT_ADDR_W = BANK_ADDR_W + BANK_BITS - SLOT_BITS;
 
     logic [2:0] state;
 
     logic        load_r;
     logic [31:0] host_addr_r;
-    logic [16:0] scratch_base_r;
+    logic [LOCAL_ADDR_W-1:0] scratch_base_r;
     logic [12:0] total_bytes_r;
     logic [12:0] xfer_count;
     logic [31:0] byte_counter;
@@ -57,9 +60,9 @@ module dma_engine #(
     logic [127:0] burst_buf;
     logic [3:0]   burst_idx;
     logic [4:0]   burst_len_r;
-    logic [2:0]   read_bank_r;
+    logic [BANK_BITS-1:0] read_bank_r;
 
-    logic [16:0] scratch_byte_addr;
+    logic [LOCAL_ADDR_W-1:0] scratch_byte_addr;
     wire [12:0] bytes_remaining = total_bytes_r - xfer_count;
 
     function automatic [4:0] burst_len_for(input logic [12:0] remaining);
@@ -73,7 +76,7 @@ module dma_engine #(
 
     assign scratch_byte_addr = scratch_base_r + {4'b0, xfer_count} + {13'b0, burst_idx};
 
-    wire [2:0]             cur_bank   = scratch_byte_addr[16:14];
+    wire [BANK_BITS-1:0]   cur_bank   = scratch_byte_addr[BANK_ADDR_W + BANK_BITS - 1 -: BANK_BITS];
     wire [BANK_ADDR_W-1:0] cur_offset = scratch_byte_addr[BANK_ADDR_W-1:0];
 
     assign cmd_ready   = (state == S_IDLE);
@@ -121,7 +124,11 @@ module dma_engine #(
                     if (cmd_valid) begin
                         load_r         <= cmd_load;
                         host_addr_r    <= cmd_host_addr;
-                        scratch_base_r <= {cmd_slot_id, 12'b0};
+                        scratch_base_r <= {
+                            {(LOCAL_ADDR_W - SLOT_BITS - SLOT_ADDR_W){1'b0}},
+                            cmd_slot_id,
+                            {SLOT_ADDR_W{1'b0}}
+                        };
                         total_bytes_r  <= cmd_byte_count;
                         xfer_count     <= '0;
                         byte_counter   <= '0;

@@ -77,12 +77,15 @@ module dma_engine_formal;
         .rst_n          (rst_n),
         .cmd_valid      (cmd_valid),
         .cmd_ready      (cmd_ready),
+        .cmd_load       (cmd_load),
         .cmd_slot_id    (cmd_slot_id),
         .cmd_byte_count (cmd_byte_count),
         .done           (done),
         .error          (error),
+        .bytes_moved    (bytes_moved),
         .scratch_req    (scratch_req),
-        .bus_req        (bus_req)
+        .bus_req        (bus_req),
+        .bus_wen        (bus_wen)
     );
 
     logic _unused;

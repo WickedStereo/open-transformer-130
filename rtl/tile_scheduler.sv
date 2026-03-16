@@ -80,6 +80,9 @@ module tile_scheduler #(
         for (si = 0; si < NUM_SLOTS; si++) begin : gen_slot_pack
             assign slot_state_out[si*2 +: 2] = slot_state[si];
         end
+        if (NUM_SLOTS < 32) begin : gen_slot_pad
+            assign slot_state_out[63:NUM_SLOTS*2] = '0;
+        end
     endgenerate
 
     // ── Action types (matching decoder output encoding) ──
@@ -144,7 +147,7 @@ module tile_scheduler #(
     assign dma_cmd_load       = act_load_r;
     assign dma_cmd_slot_id    = act_load_r ? act_dst_r : act_src_r;
     assign dma_cmd_host_addr  = act_host_addr_r +
-                                ({27'd0, (act_load_r ? act_dst_r : act_src_r)} << 12);
+                                ({{(32-SLOT_BITS){1'b0}}, (act_load_r ? act_dst_r : act_src_r)} << 12);
     assign dma_cmd_byte_count = {5'b0, act_m_r} * {5'b0, act_n_r};
 
     // Compute command outputs
@@ -259,13 +262,17 @@ module tile_scheduler #(
                 end
 
                 ST_ISSUE_VECTOR: begin
-                    if (vector_cmd_ready)
+                    if (vector_cmd_ready) begin
+                        slot_state[act_dst_r] <= SLOT_LOADING;
                         sched_state <= ST_WAIT_VECTOR;
+                    end
                 end
 
                 ST_WAIT_VECTOR: begin
-                    if (vector_done)
+                    if (vector_done) begin
+                        slot_state[act_dst_r] <= SLOT_RESIDENT;
                         sched_state <= ST_IDLE;
+                    end
                 end
 
                 ST_BARRIER_WAIT: begin

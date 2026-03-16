@@ -1,6 +1,6 @@
 # Sprint 06 - Formal Verification
 
-Status: active
+Status: done (bounded `cvc4` suite green)
 
 ## Objective
 
@@ -8,7 +8,9 @@ Convert the repo's formal collateral from attached harnesses and local elaborati
 
 ## Rebaseline Note
 
-This sprint is no longer about creating the formal skeleton. That exists. Local solver-backed closure is now in place with `cvc4` and a bounded `make formal` flow. The remaining work is CI confirmation, report maintenance, and future expansion beyond the current bounded safety assumptions.
+This sprint is no longer about creating the formal skeleton. That exists. The current non-ASIC close-out work is complete for the bounded local flow: `make formal` passes with `cvc4` across `mac_lane`, `isa_decoder`, `dma_engine`, and `tile_scheduler`, and the archived report now reflects the final harness assumptions and bounds.
+
+The highest-risk closure item was the scheduler proof. It now models the sequential slot-state behavior more faithfully, uses a reduced 4-slot harness for tractability, constrains valid action opcodes, and checks issue/completion sequencing without assuming combinational updates that the RTL does not implement.
 
 ## Deliverables
 
@@ -79,6 +81,6 @@ Formal infrastructure and module-specific proof work can proceed in parallel acr
 
 ## Open Risks And Decisions
 
-- overly aggressive assumptions can hide real bugs
-- late interface churn can invalidate proofs and waste effort
-- tool-version drift can make a "working" formal flow look healthy locally while failing in CI
+- the current proof set is still bounded; deeper DMA lengths and unbounded liveness remain follow-on work if scope expands
+- the scheduler closure depends on a reduced 4-slot harness and constrained opcode space, which is appropriate for the current safety gate but not a proof of the full 32-slot state space
+- tool-version drift can still make a "working" formal flow look healthy locally while failing in CI

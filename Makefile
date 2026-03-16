@@ -17,10 +17,14 @@ ASIC_BUILD_DIR ?= $(BUILD_DIR)/asic
 RTL_SRCS := $(wildcard rtl/*.sv)
 SIM_MAIN := sim/main.cpp
 FPGA_SRC ?= $(RTL_SRCS)
+FPGA_DEMO_TOP ?= icebreaker_demo_top
+FPGA_DEMO_SRC ?= $(RTL_SRCS) fpga/fpga_attention_demo.sv fpga/icebreaker_demo_top.sv
+FPGA_DEMO_PCF ?= fpga/icebreaker_demo.pcf
+PYTEST_DIRS ?= sim software compiler
 ICE40_ARCH ?=
 ICE40_PACKAGE ?=
 
-.PHONY: doctor sim lint test formal formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler asic-prep fpga-elab fpga gds clean
+.PHONY: doctor sim lint test formal formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler asic-prep fpga-elab fpga fpga-demo-elab fpga-demo gds clean
 
 doctor:
 	$(DOCTOR)
@@ -38,7 +42,7 @@ lint:
 	$(VERILATOR) --lint-only --sv -Wall -Wno-MULTITOP -Wno-WIDTHTRUNC -Wno-UNUSEDSIGNAL $(RTL_SRCS)
 
 test:
-	PYTHONPATH=$(CURDIR) $(PYTHON) -m pytest -q sim/
+	PYTHONPATH=$(CURDIR) $(PYTHON) -m pytest -q $(PYTEST_DIRS)
 
 formal: formal-mac-lane formal-isa-decoder formal-dma-engine formal-tile-scheduler
 
@@ -60,7 +64,7 @@ formal-dma-engine:
 formal-tile-scheduler:
 	mkdir -p $(FORMAL_BUILD_DIR)
 	$(YOSYS) -q -p 'read_verilog -formal -sv rtl/tile_scheduler.sv formal/tile_scheduler_props.sv formal/tile_scheduler_formal.sv; prep -top tile_scheduler_formal; write_smt2 -wires $(FORMAL_BUILD_DIR)/tile_scheduler.smt2'
-	$(SMTBMC) -s $(FORMAL_SOLVER) -t 30 $(FORMAL_BUILD_DIR)/tile_scheduler.smt2
+	$(SMTBMC) -s $(FORMAL_SOLVER) -t 10 $(FORMAL_BUILD_DIR)/tile_scheduler.smt2
 
 asic-prep:
 	@if [ -z "$(RTL_SRCS)" ]; then echo "No SystemVerilog sources found in rtl/"; exit 1; fi
@@ -82,6 +86,18 @@ fpga:
 	yosys -p 'read_verilog -sv $(FPGA_SRC); synth_ice40 -top $(TOP) -json $(BUILD_DIR)/fpga/$(TOP).json'
 	nextpnr-ice40 --$(ICE40_ARCH) --package $(ICE40_PACKAGE) --json $(BUILD_DIR)/fpga/$(TOP).json --asc $(BUILD_DIR)/fpga/$(TOP).asc
 	icepack $(BUILD_DIR)/fpga/$(TOP).asc $(BUILD_DIR)/fpga/$(TOP).bin
+
+fpga-demo-elab:
+	@if [ -z "$(FPGA_DEMO_SRC)" ]; then echo "No FPGA demo sources configured."; exit 1; fi
+	mkdir -p $(BUILD_DIR)/fpga
+	$(YOSYS) -p 'read_verilog -sv $(FPGA_DEMO_SRC); hierarchy -check -top $(FPGA_DEMO_TOP); stat -top $(FPGA_DEMO_TOP); write_json $(BUILD_DIR)/fpga/$(FPGA_DEMO_TOP)_hierarchy.json'
+
+fpga-demo:
+	@if [ ! -f "$(FPGA_DEMO_PCF)" ]; then echo "Missing FPGA demo constraint file: $(FPGA_DEMO_PCF)"; exit 1; fi
+	mkdir -p $(BUILD_DIR)/fpga
+	$(YOSYS) -p 'read_verilog -sv $(FPGA_DEMO_SRC); synth_ice40 -top $(FPGA_DEMO_TOP) -json $(BUILD_DIR)/fpga/$(FPGA_DEMO_TOP).json'
+	nextpnr-ice40 --up5k --package sg48 --pcf $(FPGA_DEMO_PCF) --freq 12 --json $(BUILD_DIR)/fpga/$(FPGA_DEMO_TOP).json --asc $(BUILD_DIR)/fpga/$(FPGA_DEMO_TOP).asc
+	icepack $(BUILD_DIR)/fpga/$(FPGA_DEMO_TOP).asc $(BUILD_DIR)/fpga/$(FPGA_DEMO_TOP).bin
 
 gds:
 	@if [ -z "$(PDK_ROOT)" ]; then echo "Set PDK_ROOT before running OpenLane."; exit 1; fi

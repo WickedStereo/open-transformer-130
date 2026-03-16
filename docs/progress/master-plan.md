@@ -10,14 +10,13 @@ This plan is anchored to the actual repository baseline documented in [Current S
 
 The original sprint structure is preserved, but the current repository state has changed the critical path.
 
-The repo now has an integrated prototype with a real `LOAD_TILE -> MATMUL -> SOFTMAX -> STORE_TILE` path, stronger cocotb coverage, attached formal harnesses, and backend-relevant top-level collateral. That means the near-term program is no longer blocked on basic integration. It is now blocked on:
+The repo now has an integrated prototype with a real single-tile `Q -> K^T -> score -> softmax -> V -> output store` path, stronger cocotb coverage, attached formal harnesses, a board-oriented FPGA demo wrapper, and a first software/compiler stack. That means the near-term non-ASIC program is no longer blocked on basic integration. It is now blocked on:
 
 - solver-backed formal evidence,
-- backend evidence on `attn_core`,
-- a credible SRAM macro integration path,
-- and expansion from score-path execution to fuller attention sequencing.
+- stable board-build evidence on the FPGA demo path,
+- and broader software/model coverage beyond the current supported attention fragment.
 
-As a result, formal, FPGA/synthesis smoke, and physical-design evidence must run earlier and more iteratively than the original linear reading of the plan implied.
+ASIC-oriented work remains in the long-term plan, but the current execution scope explicitly defers SRAM macro, Caravel, physical-design, tapeout, and post-silicon implementation sprints.
 
 ## Program principles
 
@@ -91,14 +90,12 @@ flowchart TD
 
 ## Current Execution Priority
 
-The immediate program priority is:
+The immediate program priority for the current non-ASIC close-out is:
 
 1. Close `Sprint 06` with real solver-backed formal results.
-2. Advance `Sprint 11A` and `Sprint 08A` by collecting synthesis/OpenLane evidence on the integrated `attn_core` top.
-3. Finish the remaining `Sprint 04` work needed for macro-backed memory realism.
-4. Extend `Sprint 07` from baseline score-path integration toward fuller attention sequencing.
-5. Start `Sprint 09A` with a minimal software/runtime path.
-6. Keep `Sprint 10` planned, but not on the near-term critical path.
+2. Close `Sprint 08B` with repeatable iCEBreaker demo build evidence.
+3. Maintain and extend `Sprint 09` from the new runtime/lowering baseline toward broader supported workloads.
+4. Keep ASIC-specific sprints preserved in the roadmap, but explicitly out of the near-term execution path.
 
 ## Cross-cutting workstreams
 

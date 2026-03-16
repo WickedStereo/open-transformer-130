@@ -50,8 +50,8 @@ async def attention_stub_smoke_test(dut):
 
     cocotb.log.info("Reference attention output: %s", expected.tolist())
     cocotb.log.info(
-        "TODO: replace the pass-through checks with exact DUT/reference "
-        "comparisons once the RTL implements real attention math."
+        "attention_stub remains a legacy pass-through top; exact attention "
+        "scoreboarding now lives in the integrated attn_core tests."
     )
 
 

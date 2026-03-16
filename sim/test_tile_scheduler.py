@@ -15,6 +15,7 @@ except ModuleNotFoundError:
 ACT_NOP = 0
 ACT_DMA = 1
 ACT_COMPUTE = 2
+ACT_VECTOR = 3
 
 SLOT_FREE = 0b00
 SLOT_LOADING = 0b01
@@ -139,6 +140,41 @@ async def test_compute_issues_only_after_slots_are_resident(dut):
     dut.compute_done.value = 0
     await RisingEdge(dut.clk)
 
+    assert int(dut.busy.value) == 0
+
+
+@cocotb.test()
+async def test_vector_marks_destination_slot_resident(dut):
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    await reset(dut)
+
+    await complete_dma_load(dut, slot_id=1)
+
+    dut.vector_cmd_ready.value = 1
+    await issue_action(
+        dut,
+        action_type=ACT_VECTOR,
+        src_slot=1,
+        dst_slot=2,
+        m=2,
+        n=2,
+    )
+
+    for _ in range(20):
+        await RisingEdge(dut.clk)
+        if int(dut.vector_cmd_valid.value):
+            break
+
+    assert int(dut.vector_cmd_valid.value) == 1
+    await RisingEdge(dut.clk)
+    assert slot_state(int(dut.slot_state_out.value), 2) == SLOT_LOADING
+
+    dut.vector_done.value = 1
+    await RisingEdge(dut.clk)
+    dut.vector_done.value = 0
+    await RisingEdge(dut.clk)
+
+    assert slot_state(int(dut.slot_state_out.value), 2) == SLOT_RESIDENT
     assert int(dut.busy.value) == 0
 
 

@@ -3,7 +3,10 @@ module attn_core #(
     parameter BANK_SIZE     = 16384,
     parameter BANK_ADDR_W   = 14,
     parameter DATA_W        = 8,
-    parameter SLOT_BITS     = 5
+    parameter SLOT_BITS     = 5,
+    parameter COMPUTE_NUM_LANES = 16,
+    parameter COMPUTE_MAX_TILE_BYTES = 4096,
+    parameter VECTOR_MAX_COLS = 64
 ) (
     input  logic        clk,
     input  logic        rst_n,
@@ -30,6 +33,7 @@ module attn_core #(
     input  logic [63:0] qbus_rdata,
     input  logic        qbus_ack
 );
+    localparam integer NUM_SLOTS = (1 << SLOT_BITS);
 
     // ── MMIO outputs ──
     logic        ctrl_enable, ctrl_soft_reset, ctrl_fault_clear;
@@ -112,7 +116,8 @@ module attn_core #(
     logic        action_valid, action_ready;
     logic [2:0]  action_type;
     logic        action_load;
-    logic [4:0]  action_src_slot, action_dst_slot;
+    logic [4:0]  decoded_action_src_slot, decoded_action_dst_slot;
+    logic [SLOT_BITS-1:0] action_src_slot, action_dst_slot;
     logic [7:0]  action_dim_m, action_dim_n, action_dim_k;
     logic [7:0]  action_flags;
     logic [3:0]  action_tag;
@@ -131,8 +136,8 @@ module attn_core #(
         .action_ready     (action_ready),
         .action_type      (action_type),
         .action_load      (action_load),
-        .action_src_slot  (action_src_slot),
-        .action_dst_slot  (action_dst_slot),
+        .action_src_slot  (decoded_action_src_slot),
+        .action_dst_slot  (decoded_action_dst_slot),
         .action_dim_m     (action_dim_m),
         .action_dim_n     (action_dim_n),
         .action_dim_k     (action_dim_k),
@@ -145,25 +150,28 @@ module attn_core #(
         .fault_active     (fault_active)
     );
 
+    assign action_src_slot = decoded_action_src_slot[SLOT_BITS-1:0];
+    assign action_dst_slot = decoded_action_dst_slot[SLOT_BITS-1:0];
+
     assign status_fault     = fault_active;
     assign fault_info_opcode = fault_info_desc[63:56];
 
     // ── Tile scheduler ──
     logic        dma_cmd_valid, dma_cmd_ready, dma_cmd_load;
     logic [31:0] dma_cmd_host_addr;
-    logic [4:0]  dma_cmd_slot_id;
+    logic [SLOT_BITS-1:0] dma_cmd_slot_id;
     logic [12:0] dma_cmd_byte_count;
     logic        dma_done, dma_error;
 
     logic        compute_cmd_valid, compute_cmd_ready;
-    logic [4:0]  compute_src_slot, compute_src2_slot, compute_dst_slot;
+    logic [SLOT_BITS-1:0] compute_src_slot, compute_src2_slot, compute_dst_slot;
     logic [7:0]  compute_dim_m, compute_dim_n, compute_dim_k;
     logic        compute_accum, compute_saturate;
     logic [3:0]  compute_shift;
     logic        compute_done;
 
     logic        vector_cmd_valid, vector_cmd_ready;
-    logic [4:0]  vector_src_slot, vector_dst_slot;
+    logic [SLOT_BITS-1:0] vector_src_slot, vector_dst_slot;
     logic [7:0]  vector_rows, vector_cols;
     logic        vector_approx;
     logic        vector_done;
@@ -171,7 +179,10 @@ module attn_core #(
     logic [63:0] slot_state_out;
     logic        perf_busy_inc, perf_stall_inc, perf_tile_inc;
 
-    tile_scheduler u_scheduler (
+    tile_scheduler #(
+        .NUM_SLOTS (NUM_SLOTS),
+        .SLOT_BITS (SLOT_BITS)
+    ) u_scheduler (
         .clk               (clk),
         .rst_n             (rst_n),
         .enable            (ctrl_enable),
@@ -273,10 +284,12 @@ module attn_core #(
     logic                              compute_busy;
 
     compute_engine #(
-        .NUM_BANKS   (NUM_BANKS),
-        .BANK_ADDR_W (BANK_ADDR_W),
-        .DATA_W      (DATA_W),
-        .SLOT_BITS   (SLOT_BITS)
+        .NUM_BANKS      (NUM_BANKS),
+        .BANK_ADDR_W    (BANK_ADDR_W),
+        .DATA_W         (DATA_W),
+        .SLOT_BITS      (SLOT_BITS),
+        .NUM_LANES      (COMPUTE_NUM_LANES),
+        .MAX_TILE_BYTES (COMPUTE_MAX_TILE_BYTES)
     ) u_compute (
         .clk           (clk),
         .rst_n         (rst_n),
@@ -316,7 +329,8 @@ module attn_core #(
         .NUM_BANKS   (NUM_BANKS),
         .BANK_ADDR_W (BANK_ADDR_W),
         .DATA_W      (DATA_W),
-        .SLOT_BITS   (SLOT_BITS)
+        .SLOT_BITS   (SLOT_BITS),
+        .MAX_COLS    (VECTOR_MAX_COLS)
     ) u_vector (
         .clk          (clk),
         .rst_n        (rst_n),

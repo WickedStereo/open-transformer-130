@@ -45,6 +45,10 @@ module compute_engine #(
     localparam ST_WAIT_RESULT  = 4'd7;
     localparam ST_WRITE_REQ    = 4'd8;
     localparam ST_DONE         = 4'd9;
+    localparam integer LOCAL_ADDR_W = 17;
+    localparam integer BANK_BITS = (NUM_BANKS > 1) ? $clog2(NUM_BANKS) : 1;
+    localparam integer SLOT_ADDR_W = BANK_ADDR_W + BANK_BITS - SLOT_BITS;
+    localparam [LOCAL_ADDR_W-1:0] GROUP_STRIDE = NUM_LANES;
 
     logic [3:0] state;
 
@@ -57,7 +61,7 @@ module compute_engine #(
     logic [15:0] prefetch_idx;
     logic [7:0]  row_idx, group_idx, k_idx;
     logic [4:0]  write_idx;
-    logic [2:0]  read_bank_r;
+    logic [BANK_BITS-1:0] read_bank_r;
 
     logic [7:0] a_buf [0:MAX_TILE_BYTES-1];
     logic [7:0] b_buf [0:MAX_TILE_BYTES-1];
@@ -71,10 +75,22 @@ module compute_engine #(
     logic [NUM_LANES*32-1:0]      mac_result_data;
     logic                         mac_busy;
 
-    logic [16:0] src_base, src2_base, dst_base;
-    assign src_base  = {src_slot_r, 12'b0};
-    assign src2_base = {src2_slot_r, 12'b0};
-    assign dst_base  = {dst_slot_r, 12'b0};
+    logic [LOCAL_ADDR_W-1:0] src_base, src2_base, dst_base;
+    assign src_base  = {
+        {(LOCAL_ADDR_W - SLOT_BITS - SLOT_ADDR_W){1'b0}},
+        src_slot_r,
+        {SLOT_ADDR_W{1'b0}}
+    };
+    assign src2_base = {
+        {(LOCAL_ADDR_W - SLOT_BITS - SLOT_ADDR_W){1'b0}},
+        src2_slot_r,
+        {SLOT_ADDR_W{1'b0}}
+    };
+    assign dst_base  = {
+        {(LOCAL_ADDR_W - SLOT_BITS - SLOT_ADDR_W){1'b0}},
+        dst_slot_r,
+        {SLOT_ADDR_W{1'b0}}
+    };
 
     function automatic [4:0] group_width_for(
         input logic [7:0] dim_n,
@@ -119,10 +135,10 @@ module compute_engine #(
         end
     endfunction
 
-    logic [16:0] req_addr;
-    logic [16:0] row_offset;
-    logic [16:0] group_offset;
-    logic [2:0]  req_bank;
+    logic [LOCAL_ADDR_W-1:0] req_addr;
+    logic [LOCAL_ADDR_W-1:0] row_offset;
+    logic [LOCAL_ADDR_W-1:0] group_offset;
+    logic [BANK_BITS-1:0]    req_bank;
     logic [BANK_ADDR_W-1:0] req_offset;
     logic [7:0]  a_feed_byte;
     integer lane_comb;
@@ -132,17 +148,18 @@ module compute_engine #(
     always_comb begin
         req_addr = '0;
         unique case (state)
-            ST_READ_A_REQ: req_addr = src_base + {1'b0, prefetch_idx};
-            ST_READ_B_REQ: req_addr = src2_base + {1'b0, prefetch_idx};
-            ST_WRITE_REQ: req_addr = dst_base + row_offset + group_offset + {12'b0, write_idx};
+            ST_READ_A_REQ: req_addr = src_base + {{(LOCAL_ADDR_W-16){1'b0}}, prefetch_idx};
+            ST_READ_B_REQ: req_addr = src2_base + {{(LOCAL_ADDR_W-16){1'b0}}, prefetch_idx};
+            ST_WRITE_REQ: req_addr = dst_base + row_offset + group_offset +
+                                     {{(LOCAL_ADDR_W-5){1'b0}}, write_idx};
             default: ;
         endcase
     end
 
-    assign req_bank   = req_addr[16:14];
+    assign req_bank   = req_addr[BANK_ADDR_W + BANK_BITS - 1 -: BANK_BITS];
     assign req_offset = req_addr[BANK_ADDR_W-1:0];
     assign row_offset = {9'b0, row_idx} * {9'b0, dim_n_r};
-    assign group_offset = {9'b0, group_idx} * 17'd16;
+    assign group_offset = {9'b0, group_idx} * GROUP_STRIDE;
     assign a_feed_byte = a_buf[({8'd0, row_idx} * {8'd0, dim_k_r}) + {8'd0, k_idx}];
 
     always_comb begin
@@ -182,7 +199,7 @@ module compute_engine #(
                 if (lane_comb < group_width_for(dim_n_r, group_idx)) begin
                     mac_b_data[lane_comb*DATA_W +: DATA_W] =
                         b_buf[({8'd0, k_idx} * {8'd0, dim_n_r}) +
-                              ({8'd0, group_idx} * 16'd16) +
+                              ({9'b0, group_idx} * GROUP_STRIDE) +
                               lane_comb];
                 end
             end
